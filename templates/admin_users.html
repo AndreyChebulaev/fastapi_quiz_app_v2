@@ -1,61 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Управление пользователями</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .user-form {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 10px;
-        }
-        .form-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .form-row input, .form-row select {
-            flex: 1;
-            padding: 8px;
-        }
-        .user-list {
-            margin-top: 20px;
-        }
-        .user-item {
-            background: white;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .user-details {
-            flex-grow: 1;
-        }
-        .btn {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        .btn-delete {
-            background: #f44336;
-            color: white;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Управление пользователями{% endblock %}
+{% block content %}
+<div class="container">
     <div class="user-info">
         <strong>👤 {{ user_info.full_name }}</strong>
         <div class="user-details">
@@ -150,5 +96,5 @@
             }
         }
     </script>
-</body>
-</html>
+</div>
+{% endblock %}

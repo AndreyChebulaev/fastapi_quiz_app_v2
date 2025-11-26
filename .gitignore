@@ -1,1 +1,1 @@
-.venv/
+Nothing should be ignored based on the provided file changes, as they consist only of HTML template files and no build artifacts, dependencies, or temporary files.
