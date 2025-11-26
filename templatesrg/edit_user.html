@@ -4,7 +4,7 @@
 <div class="container">
     <h2>Редактирование пользователя</h2>
     
-    <form method="post" action="/users/{{ user.id }}/update" class="edit-form">
+    <form method="post" action="/v2/users/{{ user.id }}/update" class="edit-form">
         <div class="form-row">
             <div class="form-group">
                 <label for="last_name">Фамилия:</label>
@@ -45,7 +45,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-save">Сохранить изменения</button>
-            <a href="/users" class="btn btn-cancel">Отмена</a>
+            <a href="/v2/users" class="btn btn-cancel">Отмена</a>
         </div>
     </form>
 </div>
@@ -62,7 +62,7 @@ function togglePassword() {
 
 function regeneratePassword(userId) {
     if (confirm('Сгенерировать новый пароль? Старый пароль будет утерян.')) {
-        fetch(`/users/${userId}/regenerate_password`, {
+        fetch(`/v2/users/${userId}/regenerate_password`, {
             method: 'POST'
         }).then(response => {
             if (response.ok) {
