@@ -1,68 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Вопрос {{ idx + 1 }} из {{ questions|length }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .progress {
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        .question-container {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        #user_answer {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-        .nav-button {
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            border: none;
-            color: white;
-        }
-        .nav-button:hover {
-            opacity: 0.9;
-        }
-        .navigation-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        .finish-button {
-        background-color: #ff9800;
-        }
-        .finish-button:hover {
-            background-color: #f57c00;
-        }
-        .next-button {
-            background-color: #4CAF50;
-        }
-        .next-button:hover {
-            background-color: #45a049;
-        }
-        .prev-button {
-            background-color: #2196F3;
-        }
-        .prev-button:hover {
-            background-color: #1976D2;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Вопрос {{ idx + 1 }} из {{ questions|length }}{% endblock %}
+{% block content %}
+<div class="container">
     <div class="progress">
         Вопрос {{ idx + 1 }} из {{ questions|length }}
     </div>
@@ -235,7 +174,5 @@
             
         </div>
     </form>
-
-    
-</body>
-</html>
+</div>
+{% endblock %}

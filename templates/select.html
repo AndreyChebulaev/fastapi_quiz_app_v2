@@ -1,112 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Quiz System - Select Test File</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .message {
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-        }
-        .success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border: 1px solid #4caf50;
-        }
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            border: 1px solid #f44336;
-        }
-        .upload-section {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 30px;
-        }
-        .file-list {
-            margin: 20px 0;
-        }
-        .file-item {
-            background: #f9f9f9;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .file-info {
-            flex-grow: 1;
-        }
-        .file-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-select {
-            background: #4CAF50;
-            color: white;
-        }
-        .btn-delete {
-            background: #f44336;
-            color: white;
-        }
-        .btn-upload {
-            background: #2196F3;
-            color: white;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .user-info {
-            text-align: right;
-            margin-bottom: 20px;
-            color: #666;
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .user-details {
-            font-size: 14px;
-            margin-top: 5px;
-        
-        }
-    </style>
-</head>
-<body>
-    <div>
-        krcheto
-        <a href="/v2">aneme</a>
-        <a href="/main2">aneme</a>
-    </div>
-    <div class="user-info">
-        <strong>👤 {{ user_info.full_name }}</strong>
-        <div class="user-details">
-            Группа: {{ user_info.group_name }} | 
-            Роль: {{ user_info.user_type }} |
-            Логин: {{ user_info.login }}
+{% extends "base.html" %}
+{% block title %}Quiz System - Select Test File{% endblock %}
+{% block content %}
+    <div class="container">
+        <div class="user-info">
+            <strong>👤 {{ user_info.full_name }}</strong>
+            <div class="user-details">
+                Группа: {{ user_info.group_name }} | 
+                Роль: {{ user_info.user_type }} |
+                Логин: {{ user_info.login }}
+            </div>
+            <a href="/logout" style="color: #666; text-decoration: none;">🚪 Выйти</a>
         </div>
-        <a href="/logout" style="color: #666; text-decoration: none;">🚪 Выйти</a>
-    </div>
     
     <div class="header">
         <h1>📝 Quiz System</h1>
@@ -172,5 +76,5 @@
             }
         }
     </script>
-</body>
-</html>
+</div>
+{% endblock %}
