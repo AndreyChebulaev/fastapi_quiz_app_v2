@@ -5,7 +5,7 @@
     <h2>Список пользователей</h2>
     
     <div class="filters">
-        <form method="get" action="/v2/users" class="filter-form">
+        <form method="get" class="filter-form">
             <div class="filter-row">
                 <div class="filter-group">
                     <label for="search">Поиск:</label>
@@ -44,7 +44,7 @@
             
             <div class="filter-actions">
                 <button type="submit" class="btn btn-primary">Применить фильтры</button>
-                <a href="/v2/users" class="btn btn-secondary">Сбросить</a>
+                <a href="/users" class="btn btn-secondary">Сбросить</a>
             </div>
         </form>
     </div>
@@ -60,7 +60,7 @@
                     <div class="user-login">Логин: {{ user.login }}</div>
                 </div>
                 <div class="user-actions">
-                    <a href="/v2/users/{{ user.id }}/edit" class="btn btn-edit">Редактировать</a>
+                    <a href="/users/{{ user.id }}/edit" class="btn btn-edit">Редактировать</a>
                     <button type="button" onclick="deleteUser({{ user.id }})" class="btn btn-delete">Удалить</button>
                 </div>
             </div>
@@ -81,7 +81,7 @@
                     <div class="user-login">Логин: {{ user.login }}</div>
                 </div>
                 <div class="user-actions">
-                    <a href="/v2/users/{{ user.id }}/edit" class="btn btn-edit">Редактировать</a>
+                    <a href="/users/{{ user.id }}/edit" class="btn btn-edit">Редактировать</a>
                     <button type="button" onclick="deleteUser({{ user.id }})" class="btn btn-delete">Удалить</button>
                 </div>
             </div>
@@ -100,7 +100,7 @@
 <script>
 function deleteUser(userId) {
     if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
-        fetch(`/v2/users/${userId}/delete`, {
+        fetch(`/users/${userId}/delete`, {
             method: 'POST'
         }).then(response => {
             if (response.ok) {
