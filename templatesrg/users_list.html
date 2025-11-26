@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Список пользователей</h2>
+    
+    <div class="filters">
+        <form method="get" class="filter-form">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="search">Поиск:</label>
+                    <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="ФИО, группа, логин..." class="form-input search-input">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="user_type">Тип пользователя:</label>
+                    <select id="user_type" name="user_type" class="form-select">
+                        <option value="all" {% if current_user_type == 'all' %}selected{% endif %}>Все</option>
+                        <option value="teacher" {% if current_user_type == 'teacher' %}selected{% endif %}>Преподаватели</option>
+                        <option value="student" {% if current_user_type == 'student' %}selected{% endif %}>Студенты</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="group_filter">Группа:</label>
+                    <select id="group_filter" name="group_filter" class="form-select">
+                        <option value="">Все группы</option>
+                        {% for group in available_groups %}
+                        <option value="{{ group }}" {% if group_filter == group %}selected{% endif %}>{{ group }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="sort_by">Сортировка:</label>
+                    <select id="sort_by" name="sort_by" class="form-select">
+                        <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Сначала новые</option>
+                        <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Сначала старые</option>
+                        <option value="alphabet" {% if sort_by == 'alphabet' %}selected{% endif %}>По алфавиту</option>
+                        <option value="group" {% if sort_by == 'group' %}selected{% endif %}>По группам</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                <a href="/users" class="btn btn-secondary">Сбросить</a>
+            </div>
+        </form>
+    </div>
+
+    {% if teachers %}
+    <div class="users-section">
+        <h3>Преподаватели ({{ teachers|length }})</h3>
+        <div class="users-list">
+            {% for user in teachers %}
+            <div class="user-item">
+                <div class="user-info">
+                    <div class="user-name">{{ user.last_name }} {{ user.first_name }} {{ user.middle_name or '' }}</div>
+                    <div class="user-login">Логин: {{ user.login }}</div>
+                </div>
+                <div class="user-actions">
+                    <a href="/users/{{ user.id }}/edit" class="btn btn-edit">Редактировать</a>
+                    <button type="button" onclick="deleteUser({{ user.id }})" class="btn btn-delete">Удалить</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if students %}
+    <div class="users-section">
+        <h3>Студенты ({{ students|length }})</h3>
+        <div class="users-list">
+            {% for user in students %}
+            <div class="user-item">
+                <div class="user-info">
+                    <div class="user-name">{{ user.last_name }} {{ user.first_name }} {{ user.middle_name or '' }}</div>
+                    <div class="user-group">Группа: {{ user.group_name }}</div>
+                    <div class="user-login">Логин: {{ user.login }}</div>
+                </div>
+                <div class="user-actions">
+                    <a href="/users/{{ user.id }}/edit" class="btn btn-edit">Редактировать</a>
+                    <button type="button" onclick="deleteUser({{ user.id }})" class="btn btn-delete">Удалить</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not teachers and not students %}
+    <div class="no-users">
+        <p>Пользователи не найдены</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteUser(userId) {
+    if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+        fetch(`/users/${userId}/delete`, {
+            method: 'POST'
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// Убрано автоматическое применение при изменении группы
+// Теперь фильтры применяются только по кнопке
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результат</title>
+    <link rel="stylesheet" href="/static/styles.css"> <!-- при необходимости -->
+</head>
+<body>
+    <div class="container">
+        <h1>Результат ответа</h1>
+        {% if is_correct %}
+            <div class="result correct">
+                <h2>✅ Правильно!</h2>
+                <p>Семантическая схожесть: <strong>{{ score }}</strong></p>
+            </div>
+        {% else %}
+            <div class="result incorrect">
+                <h2>❌ Неправильно</h2>
+                <p>Семантическая схожесть: <strong>{{ score }}</strong></p>
+                <p>Правильный ответ: <em>{{ true_answer }}</em></p>
+                <!-- Если хотите вывести ближайший эталон:
+                <p>Ближайший эталон: "{{ best_answer }}" (схожесть {{ best_score }})</p>
+                -->
+            </div>
+        {% endif %}
+        <div class="navigation">
+            <a href="/quiz?idx={{ next_idx }}" class="btn">Следующий вопрос</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px;
+            text-align: center;
+        }
+        .option-card {
+            background: #f5f5f5;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .option-card:hover {
+            background: #e0e0e0;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quiz System</h1>
+    <p>Выберите способ загрузки теста:</p>
+    
+    <div class="option-card" onclick="location.href='/upload'">
+        <h2>Загрузить новый файл</h2>
+        <p>Загрузите Excel-файл с вашего компьютера на сервер</p>
+    </div>
+    
+    <div class="option-card" onclick="location.href='/select'">
+        <h2>Выбрать с сервера</h2>
+        <p>Выберите из ранее загруженных файлов и начните тест</p>
+    </div>
+</body>
+</html>

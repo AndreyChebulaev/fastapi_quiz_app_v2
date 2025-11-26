@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Регистрация нового пользователя</h2>
+    
+    {% if error %}
+    <div class="error-message">
+        {{ error }}
+    </div>
+    {% endif %}
+    
+    <form method="post" class="registration-form">
+        <div class="form-group">
+            <label for="user_type">Тип пользователя:</label>
+            <select id="user_type" name="user_type" required class="form-select">
+                <option value="">Выберите тип пользователя</option>
+                <option value="teacher">Преподаватель</option>
+                <option value="student">Студент</option>
+            </select>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="last_name">Фамилия:</label>
+                <input type="text" id="last_name" name="last_name" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="first_name">Имя:</label>
+                <input type="text" id="first_name" name="first_name" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="middle_name">Отчество:</label>
+                <input type="text" id="middle_name" name="middle_name" class="form-input">
+            </div>
+        </div>
+        
+        <div class="form-group" id="group-field" style="display: none;">
+            <label for="group_name">Группа:</label>
+            <input type="text" id="group_name" name="group_name" class="form-input">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зарегистрировать</button>
+            <a href="/users" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('user_type').addEventListener('change', function() {
+    const groupField = document.getElementById('group-field');
+    if (this.value === 'student') {
+        groupField.style.display = 'block';
+        document.getElementById('group_name').required = true;
+    } else {
+        groupField.style.display = 'none';
+        document.getElementById('group_name').required = false;
+    }
+});
+</script>
+{% endblock %}

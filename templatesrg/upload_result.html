@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="upload-result">
+        <h2>Результаты загрузки</h2>
+        
+        <!-- Статистика в одну строку -->
+        <div class="result-stats">
+            <div class="stat-card stat-success">
+                <div class="stat-number">{{ results.successful }}</div>
+                <div class="stat-label">Успешно добавлено</div>
+            </div>
+            
+            <div class="stat-card stat-failed">
+                <div class="stat-number">{{ results.failed }}</div>
+                <div class="stat-label">Ошибки</div>
+            </div>
+            
+            <div class="stat-card stat-total">
+                <div class="stat-number">{{ total_processed }}</div>
+                <div class="stat-label">Всего обработано</div>
+            </div>
+        </div>
+
+        <!-- Детали результатов в одну строку -->
+        <div class="results-details">
+            {% if results.existing_users %}
+            <div class="detail-section exists-section">
+                <h3>Существующие пользователи</h3>
+                <div class="detail-content">
+                    <div class="exists-list">
+                        {% for user in results.existing_users %}
+                        <div class="exists-item">{{ user }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if results.errors %}
+            <div class="detail-section errors-section">
+                <h3>Ошибки при загрузке</h3>
+                <div class="detail-content">
+                    <div class="errors-list">
+                        {% for error in results.errors %}
+                        <div class="error-item">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        <!-- Кнопки действий -->
+        <div class="result-actions">
+            <a href="/upload" class="btn btn-primary">Загрузить другой файл</a>
+            <a href="/users" class="btn btn-secondary">Перейти к списку пользователей</a>
+            <a href="/" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

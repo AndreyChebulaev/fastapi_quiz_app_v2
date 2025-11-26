@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Управление пользователями</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .user-form {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-row input, .form-row select {
+            flex: 1;
+            padding: 8px;
+        }
+        .user-list {
+            margin-top: 20px;
+        }
+        .user-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-details {
+            flex-grow: 1;
+        }
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-info">
+        <strong>👤 {{ user_info.full_name }}</strong>
+        <div class="user-details">
+            Группа: {{ user_info.group_name }} | 
+            Роль: {{ user_info.user_type }} |
+            Логин: {{ user_info.login }}
+        </div>
+        <a href="/select">← Назад к тестам</a> | 
+        <a href="/logout" style="color: #666; text-decoration: none;">🚪 Выйти</a>
+    </div>
+
+    <h1>👥 Управление пользователями</h1>
+    
+    <div class="user-form">
+        <h3>Добавить пользователя</h3>
+        <form id="addUserForm">
+            <div class="form-row">
+                <select name="user_type" required>
+                    <option value="">Выберите тип</option>
+                    <option value="student">Студент</option>
+                    <option value="teacher">Преподаватель</option>
+                    <option value="admin">Администратор</option>
+                </select>
+                <input type="text" name="last_name" placeholder="Фамилия" required>
+                <input type="text" name="first_name" placeholder="Имя" required>
+            </div>
+            <div class="form-row">
+                <input type="text" name="middle_name" placeholder="Отчество">
+                <input type="text" name="group_name" placeholder="Группа" required>
+                <input type="text" name="login" placeholder="Логин" required>
+            </div>
+            <div class="form-row">
+                <input type="password" name="password" placeholder="Пароль" required>
+                <button type="submit" class="btn" style="background: #4CAF50; color: white;">Добавить пользователя</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="user-list">
+        <h3>Список пользователей ({{ users|length }})</h3>
+        {% for user in users %}
+        <div class="user-item">
+            <div class="user-details">
+                <strong>{{ user.full_name }}</strong><br>
+                <small>
+                    Логин: {{ user.login }} | 
+                    Пароль: {{ user.password }} | 
+                    Группа: {{ user.group_name }} | 
+                    Роль: {{ user.user_type }} | 
+                    Создан: {{ user.created_at }}
+                </small>
+            </div>
+            <button onclick="deleteUser({{ user.id }})" class="btn btn-delete">Удалить</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            const response = await fetch('/admin/add_user', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            alert(result.message);
+            
+            if (result.status === 'success') {
+                location.reload();
+            }
+        });
+
+        async function deleteUser(userId) {
+            if (confirm('Удалить этого пользователя?')) {
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                
+                const response = await fetch('/admin/delete_user', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                alert(result.message);
+                
+                if (result.status === 'success') {
+                    location.reload();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

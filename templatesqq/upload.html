@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="home-container">
+    <h2>Добро пожаловать!</h2>
+    <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+        Выберите действие для работы с вопросами и ответами
+    </p>
+    
+    <div class="home-actions" style="margin-top: 20px; margin-bottom: 20px;">
+        <!-- Карточка загрузки файла -->
+        <div class="action-card" style="min-width: 280px; max-width: 320px;">
+            <h3>📤 Загрузить файл</h3>
+            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                Загрузите существующий Excel файл для редактирования
+            </p>
+            <form action="/main2/upload" method="post" enctype="multipart/form-data">
+                <div class="file-upload-wrapper">
+                    <label class="file-upload-label" style="padding: 15px;">
+                        <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
+                        <div style="font-weight: 600; color: #3498db; font-size: 14px;">Выберите файл</div>
+                        <div style="font-size: 11px; color: #7f8c8d; margin-top: 3px;">
+                            .xlsx, .xls
+                        </div>
+                        <input type="file" name="file" accept=".xlsx,.xls" required 
+                               style="display: none;" 
+                               onchange="updateFileName(this)">
+                    </label>
+                    <div id="file-name" style="font-size: 12px; color: #7f8c8d; margin-top: 8px;">
+                        Файл не выбран
+                    </div>
+                </div>
+                <button type="submit" class="home-btn" style="padding: 12px 20px; font-size: 14px; min-width: 180px;">📝 Редактировать файл</button>
+            </form>
+        </div>
+        
+        <!-- Карточка создания нового файла -->
+        <div class="action-card" style="min-width: 280px; max-width: 320px;">
+            <h3>🆕 Создать новый</h3>
+            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                Создайте новый файл с вопросами и ответами с нуля
+            </p>
+            <div style="font-size: 36px; margin: 15px 0;">✨</div>
+            <a href="/main2/create-new" style="text-decoration: none;">
+                <button type="button" class="home-btn create" style="padding: 12px 20px; font-size: 14px; min-width: 180px;">Создать новый файл</button>
+            </a>
+        </div>
+    </div>
+    
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+        <h3 style="color: #2c3e50; margin-top: 0; text-align: center; font-size: 16px;">📋 Поддерживаемый формат файла</h3>
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+            <div style="text-align: center;">
+                <div style="font-size: 20px; margin-bottom: 8px;">📝</div>
+                <div style="font-weight: 600; color: #2c3e50; font-size: 12px;">Столбец A</div>
+                <div style="color: #666; font-size: 11px;">Вопросы</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 20px; margin-bottom: 8px;">💬</div>
+                <div style="font-weight: 600; color: #2c3e50; font-size: 12px;">Столбец B</div>
+                <div style="color: #666; font-size: 11px;">Ответы<br><small>"ответ1","ответ2"</small></div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 20px; margin-bottom: 8px;">📁</div>
+                <div style="font-weight: 600; color: #2c3e50; font-size: 12px;">Формат</div>
+                <div style="color: #666; font-size: 11px;">.xlsx, .xls</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFileName(input) {
+    const fileNameDisplay = document.getElementById('file-name');
+    if (input.files.length > 0) {
+        fileNameDisplay.textContent = 'Выбран файл: ' + input.files[0].name;
+        fileNameDisplay.style.color = '#27ae60';
+        fileNameDisplay.style.fontWeight = '600';
+    } else {
+        fileNameDisplay.textContent = 'Файл не выбран';
+        fileNameDisplay.style.color = '#7f8c8d';
+        fileNameDisplay.style.fontWeight = 'normal';
+    }
+}
+</script>
+{% endblock %}

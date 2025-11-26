@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="welcome-section">
+        <h2>Система регистрации пользователей</h2>
+        
+        <div class="action-buttons">
+            <a href="/register" class="btn btn-primary">Зарегистрировать пользователя</a>
+            <a href="/upload" class="btn btn-primary">Загрузить из файла</a>
+            <a href="/users" class="btn btn-secondary">Просмотреть список</a>
+        </div>
+
+        <div class="quick-stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>Быстрая регистрация</h3>
+                    <p>Добавьте пользователей вручную через удобную форму</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Массовая загрузка</h3>
+                    <p>Импортируйте данные из CSV или Excel файлов</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Управление доступом</h3>
+                    <p>Разделение на преподавателей и студентов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

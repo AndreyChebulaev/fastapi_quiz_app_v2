@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Результаты теста</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .summary {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .result-item {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .correct {
+            background-color: #e6ffe6;
+            border-left: 5px solid #4CAF50;
+        }
+        .incorrect {
+            background-color: #ffe6e6;
+            border-left: 5px solid #f44336;
+        }
+        .reference-answers {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 3px;
+        }
+        .reference-answer {
+            margin: 5px 0;
+            padding: 5px;
+            background: #fff;
+        }
+        .best-match {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .similarity-bar {
+            height: 20px;
+            background: #e0e0e0;
+            margin-top: 5px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .similarity-progress {
+            height: 100%;
+            background: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="summary">
+        <h1>Результат</h1>
+        <p>Вы ответили верно {{ total_correct }} из {{ total_questions }} ({{ percentage }}%)</p>
+    </div>
+    
+    {% for result in results %}
+    <div class="result-item {% if result.is_correct %}correct{% else %}incorrect{% endif %}">
+        <h3>Вопрос: {{ result.question }}</h3>
+        <p><strong>Ваш ответ:</strong> {{ result.user_answer }}</p>
+        <!--<p><strong>Best match:</strong> {{ result.best_reference_answer }}</p>-->
+        <p><strong>Сходство:</strong> {{ result.score }}</p>
+        <!--<p><strong>Similarity score:</strong> {{ result.score }} (threshold: {{ threshold }})</p>-->
+        
+        <div class="similarity-bar">
+            <div class="similarity-progress" style="width: {{ result.max_similarity * 100 }}%"></div>
+        </div>
+        
+        <!--<div class="reference-answers">
+            <p><strong>All reference answers:</strong></p>
+            {% for ref_answer in result.reference_answers %}
+                <div class="reference-answer {% if ref_answer == result.best_reference_answer %}best-match{% endif %}">
+                    {{ ref_answer }}
+                </div>
+            {% endfor %}
+        </div>-->
+    </div>
+    {% endfor %}
+    
+    <form action="/">
+        <button type="submit"  >Начать новый тест</button>
+    </form>
+</body>
+</html>

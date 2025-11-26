@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="upload-section">
+        <h2>Загрузка пользователей из файла</h2>
+        
+        <div class="upload-info">
+            <div class="info-card">
+                <h3>📋 Формат файла</h3>
+                <p>Поддерживаются CSV и Excel файлы со следующими колонками:</p>
+                <ul>
+                    <li><strong>Обязательные:</strong> last_name, first_name, user_type</li>
+                    <li><strong>Опциональные:</strong> middle_name, group_name</li>
+                </ul>
+            </div>
+            
+            <div class="info-card">
+                <h3>👥 Типы пользователей</h3>
+                <ul>
+                    <li><code>teacher</code> - Преподаватель</li>
+                    <li><code>student</code> - Студент (требуется group_name)</li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file" class="file-label">
+                    <span class="file-button">Выберите файл</span>
+                    <span class="file-name" id="file-name">Файл не выбран</span>
+                </label>
+                <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required class="file-input">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-upload">Загрузить файл</button>
+                <a href="/users" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+
+        <div class="example-section">
+            <h3>Пример CSV файла:</h3>
+            <div class="code-example">
+                <pre><code>last_name,first_name,middle_name,user_type,group_name
+Иванов,Иван,Иванович,teacher,
+Петрова,Мария,Сергеевна,student,ИТ-21
+Сидоров,Алексей,,student,ФИЗ-22</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const fileName = document.getElementById('file-name');
+    if (this.files.length > 0) {
+        fileName.textContent = this.files[0].name;
+    } else {
+        fileName.textContent = 'Файл не выбран';
+    }
+});
+</script>
+{% endblock %}
