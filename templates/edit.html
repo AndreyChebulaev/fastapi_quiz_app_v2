@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Редактирование вопросов и ответов</h2>
+<form action="/main2/save" method="post" id="main-form">
+    <input type="hidden" name="filename" value="{{ filename }}">
+    <input type="hidden" name="original_data" value="{{ original_data }}">
+    
+    <div class="file-info">
+        <h3>📄 Файл: {{ filename }}</h3>
+        <p style="margin: 0; color: #666;">Используйте кнопки ниже для управления вопросами и ответами</p>
+    </div>
+    
+    <div id="questions-container">
+        {% for question in questions %}
+        <div class="question-block" data-index="{{ loop.index0 }}">
+            <div class="question-header">
+                <h3>❓ Вопрос {{ loop.index }}</h3>
+                <button type="button" class="btn-remove-question" onclick="removeQuestion({{ loop.index0 }})">
+                    🗑️ Удалить вопрос
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label>Текст вопроса:</label>
+                <input type="text" name="questions" value="{{ question.question }}" 
+                       placeholder="Введите текст вопроса..." required
+                       style="padding: 15px; font-size: 15px;">
+            </div>
+            
+            <div class="form-group">
+                <label>📝 Ответы:</label>
+                <div class="answers-container" id="answers-{{ loop.index0 }}">
+                    {% for answer in question.answers %}
+                    <div class="answer-row">
+                        <input type="text" class="answer-input" value="{{ answer }}" 
+                               placeholder="Введите вариант ответа..."
+                               style="padding: 12px;">
+                        <button type="button" class="btn-remove-answer" onclick="removeAnswer(this)">×</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn-add-answer" onclick="addAnswer({{ loop.index0 }})">
+                    ➕ Добавить ответ
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="actions">
+        <button type="button" onclick="addQuestion()">
+            ➕ Добавить вопрос
+        </button>
+        <button type="submit" style="background: linear-gradient(135deg, #27ae60, #219a52);">
+            💾 Сохранить изменения
+        </button>
+    </div>
+</form>
+
+<script>
+let questionCount = {{ questions | length }};
+
+// Добавление нового вопроса
+function addQuestion() {
+    const container = document.getElementById('questions-container');
+    const newIndex = questionCount;
+    
+    const newQuestion = document.createElement('div');
+    newQuestion.className = 'question-block';
+    newQuestion.setAttribute('data-index', newIndex);
+    newQuestion.innerHTML = `
+        <div class="question-header">
+            <h3>❓ Вопрос ${newIndex + 1}</h3>
+            <button type="button" class="btn-remove-question" onclick="removeQuestion(${newIndex})">
+                🗑️ Удалить вопрос
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label>Текст вопроса:</label>
+            <input type="text" name="questions" value="" 
+                   placeholder="Введите текст вопроса..." required
+                   style="padding: 15px; font-size: 15px;">
+        </div>
+        
+        <div class="form-group">
+            <label>📝 Ответы:</label>
+            <div class="answers-container" id="answers-${newIndex}">
+                <div class="answer-row">
+                    <input type="text" class="answer-input" value="" 
+                           placeholder="Введите вариант ответа..."
+                           style="padding: 12px;">
+                    <button type="button" class="btn-remove-answer" onclick="removeAnswer(this)">×</button>
+                </div>
+            </div>
+            <button type="button" class="btn-add-answer" onclick="addAnswer(${newIndex})">
+                ➕ Добавить ответ
+            </button>
+        </div>
+    `;
+    container.appendChild(newQuestion);
+    questionCount++;
+    updateQuestionNumbers();
+}
+
+// Удаление вопроса
+function removeQuestion(index) {
+    const questionBlock = document.querySelector(`.question-block[data-index="${index}"]`);
+    if (questionBlock && document.querySelectorAll('.question-block').length > 1) {
+        questionBlock.remove();
+        updateQuestionNumbers();
+    } else if (document.querySelectorAll('.question-block').length === 1) {
+        alert('Должен остаться хотя бы один вопрос!');
+    }
+}
+
+// Обновление нумерации вопросов
+function updateQuestionNumbers() {
+    const questionBlocks = document.querySelectorAll('.question-block');
+    questionBlocks.forEach((block, index) => {
+        const header = block.querySelector('.question-header h3');
+        header.textContent = `❓ Вопрос ${index + 1}`;
+        block.setAttribute('data-index', index);
+        
+        // Обновляем обработчики событий
+        const removeBtn = block.querySelector('.btn-remove-question');
+        removeBtn.setAttribute('onclick', `removeQuestion(${index})`);
+        
+        const addAnswerBtn = block.querySelector('.btn-add-answer');
+        addAnswerBtn.setAttribute('onclick', `addAnswer(${index})`);
+        
+        // Обновляем ID контейнера ответов
+        const answersContainer = block.querySelector('.answers-container');
+        answersContainer.id = `answers-${index}`;
+    });
+    questionCount = questionBlocks.length;
+}
+
+// Добавление ответа
+function addAnswer(questionIndex) {
+    const answersContainer = document.getElementById(`answers-${questionIndex}`);
+    const answerRow = document.createElement('div');
+    answerRow.className = 'answer-row';
+    answerRow.innerHTML = `
+        <input type="text" class="answer-input" value="" 
+               placeholder="Введите вариант ответа..."
+               style="padding: 12px;">
+        <button type="button" class="btn-remove-answer" onclick="removeAnswer(this)">×</button>
+    `;
+    answersContainer.appendChild(answerRow);
+}
+
+// Удаление ответа
+function removeAnswer(button) {
+    const answerRow = button.parentElement;
+    const answersContainer = answerRow.parentElement;
+    if (answersContainer.querySelectorAll('.answer-row').length > 1) {
+        answerRow.remove();
+    } else {
+        alert('Должен остаться хотя бы один ответ!');
+    }
+}
+
+// Подготовка данных перед отправкой формы
+document.getElementById('main-form').addEventListener('submit', function(e) {
+    // Собираем все ответы в строки с правильным форматированием кавычек
+    const questionBlocks = document.querySelectorAll('.question-block');
+    
+    // Очищаем старые скрытые поля
+    const oldHiddenInputs = this.querySelectorAll('input[name="answers"]');
+    oldHiddenInputs.forEach(input => input.remove());
+    
+    questionBlocks.forEach((block, index) => {
+        const answerInputs = block.querySelectorAll('.answer-input');
+        const answersArray = Array.from(answerInputs).map(input => input.value.trim()).filter(val => val);
+        
+        // Правильно форматируем ответы с кавычками
+        const answersString = answersArray.map(answer => `"${answer}"`).join(',');
+        
+        // Создаем скрытое поле для ответов
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'answers';
+        hiddenInput.value = answersString;
+        this.appendChild(hiddenInput);
+    });
+});
+</script>
+{% endblock %}

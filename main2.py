@@ -10,17 +10,20 @@ import json
 import shutil
 import sqlite3
 import secrets
+import sys
+import importlib
+from session_manager import get_user_from_session as get_main_session_user
 
 app = FastAPI(title="Excel Questions Editor")
 
-# Глобальные данные для сессий (в реальном приложении используйте Redis или базу данных)
-active_sessions = {}
+# Создаем директории
+Path("uploads").mkdir(exist_ok=True)
 
 def get_user_from_session(request: Request) -> str:
-    """Получает пользователя из сессии"""
+    """Получает пользователя из сессии (совместимо с основным приложением)"""
     session_token = request.cookies.get("session_token")
-    if session_token and session_token in active_sessions:
-        return active_sessions[session_token]
+    if session_token:
+        return get_main_session_user(session_token)
     return None
 
 def get_user_by_login(login: str):
@@ -82,7 +85,7 @@ def get_user_permissions(user_type: str):
 Path("uploads").mkdir(exist_ok=True)
 
 # Настройка шаблонов
-templates = Jinja2Templates(directory="templatesqq")
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -90,7 +93,7 @@ async def home(request: Request):
     user_login = get_user_from_session(request)
     if not user_login:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/", status_code=307)  # This will redirect to main app login
+        return RedirectResponse(url="/", status_code=303)  # Redirect to main app login
     
     # Проверяем права доступа
     user_info = get_user_full_info(user_login)
@@ -282,7 +285,7 @@ async def create_new(request: Request):
     user_login = get_user_from_session(request)
     if not user_login:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/", status_code=307)  # This will redirect to main app login
+        return RedirectResponse(url="/", status_code=303)  # Redirect to main app login
     
     # Проверяем права доступа
     user_info = get_user_full_info(user_login)

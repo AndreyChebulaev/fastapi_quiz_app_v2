@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import app as appp
 from datetime import datetime
 import main2
+from session_manager import create_session, active_sessions
 
 
 app = FastAPI()
@@ -59,8 +60,9 @@ def create_session(username: str) -> str:
 def get_user_from_session(request: Request) -> Optional[str]:
     """Получает пользователя из сессии"""
     session_token = request.cookies.get("session_token")
-    if session_token and session_token in active_sessions:
-        return active_sessions[session_token]
+    if session_token:
+        from session_manager import get_user_from_session as get_session_user
+        return get_session_user(session_token)
     return None
 
 def login_required(request: Request):
