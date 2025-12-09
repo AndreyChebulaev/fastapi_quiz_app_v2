@@ -162,6 +162,19 @@ def get_user_full_info(login: str):
         }
     return None
 
+
+def get_user_permissions(user_type: str):
+    """Возвращает доступные права пользователя"""
+    permissions = {
+        'can_view_tests': True,  # Все могут видеть тесты
+        'can_take_tests': True,  # Все могут проходить тесты
+        'can_upload_files': user_type in ['teacher', 'admin'],  # Только преподаватели и админы могут загружать файлы
+        'can_delete_files': user_type in ['teacher', 'admin'],  # Только преподаватели и админы могут удалять файлы
+        'can_manage_users': user_type == 'admin',  # Только админы могут управлять пользователями
+        'can_edit_tests': user_type in ['teacher', 'admin'],  # Только преподаватели и админы могут редактировать тесты
+    }
+    return permissions
+
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
     """Страница входа"""
@@ -213,21 +226,37 @@ def select_file_page(request: Request):
         return RedirectResponse(url="/", status_code=303)
     
     user_info = get_user_full_info(login)
+    user_permissions = get_user_permissions(user_info['user_type'])
     files = get_uploaded_files()
     
     return templates.TemplateResponse("select.html", {
         "request": request,
         "files": files,
-        "user_info": user_info
+        "user_info": user_info,
+        "user_permissions": user_permissions
     })
 
 @app.post("/upload", response_class=HTMLResponse)
 async def upload_file(request: Request, file: UploadFile = File(...)):
     """Загрузка нового файла на сервер"""
     # Проверяем авторизацию
-    user = get_user_from_session(request)
-    if not user:
+    user_login = get_user_from_session(request)
+    if not user_login:
         return RedirectResponse(url="/", status_code=303)
+    
+    # Проверяем права доступа
+    user_info = get_user_full_info(user_login)
+    user_permissions = get_user_permissions(user_info['user_type'])
+    
+    if not user_permissions['can_upload_files']:
+        files = get_uploaded_files()
+        return templates.TemplateResponse("select.html", {
+            "request": request,
+            "files": files,
+            "user_info": user_info,
+            "user_permissions": user_permissions,
+            "error": "У вас нет прав для загрузки файлов"
+        })
     
     try:
         # Сохраняем файл в папку uploaded_files
@@ -240,7 +269,8 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         return templates.TemplateResponse("select.html", {
             "request": request,
             "files": files,
-            "username": user,
+            "user_info": user_info,
+            "user_permissions": user_permissions,
             "message": f"Файл {file.filename} успешно загружен!"
         })
         
@@ -249,7 +279,8 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         return templates.TemplateResponse("select.html", {
             "request": request,
             "files": files,
-            "username": user,
+            "user_info": user_info,
+            "user_permissions": user_permissions,
             "error": f"Ошибка загрузки файла: {str(e)}"
         })
 
@@ -318,9 +349,16 @@ def get_files_list(request: Request):
 @app.post("/delete_file")
 async def delete_file(request: Request, filename: str = Form(...)):
     """Удаление файла с сервера"""
-    user = get_user_from_session(request)
-    if not user:
+    user_login = get_user_from_session(request)
+    if not user_login:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
+    
+    # Проверяем права доступа
+    user_info = get_user_full_info(user_login)
+    user_permissions = get_user_permissions(user_info['user_type'])
+    
+    if not user_permissions['can_delete_files']:
+        raise HTTPException(status_code=403, detail="У вас нет прав для удаления файлов")
     
     try:
         file_path = os.path.join(UPLOAD_DIR, filename)
@@ -339,6 +377,14 @@ def admin_users_page(request: Request):
     login = get_user_from_session(request)
     if not login:
         return RedirectResponse(url="/", status_code=303)
+    
+    # Проверяем права доступа
+    user_info = get_user_full_info(login)
+    user_permissions = get_user_permissions(user_info['user_type'])
+    
+    if not user_permissions['can_manage_users']:
+        # Если нет прав, перенаправляем на главную страницу тестов
+        return RedirectResponse(url="/select", status_code=303)
     
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -366,12 +412,11 @@ def admin_users_page(request: Request):
             "created_at": user[8]
         })
     
-    current_user_info = get_user_full_info(login)
-    
     return templates.TemplateResponse("admin_users.html", {
         "request": request,
         "users": users,
-        "user_info": current_user_info
+        "user_info": user_info,
+        "user_permissions": user_permissions
     })
 
 @app.post("/admin/add_user")
@@ -389,6 +434,13 @@ async def add_user(
     current_login = get_user_from_session(request)
     if not current_login:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
+    
+    # Проверяем права доступа
+    current_user_info = get_user_full_info(current_login)
+    user_permissions = get_user_permissions(current_user_info['user_type'])
+    
+    if not user_permissions['can_manage_users']:
+        raise HTTPException(status_code=403, detail="У вас нет прав для добавления пользователей")
     
     try:
         conn = sqlite3.connect('users.db')
@@ -414,6 +466,13 @@ async def delete_user(request: Request, user_id: int = Form(...)):
     if not current_login:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
     
+    # Проверяем права доступа
+    current_user_info = get_user_full_info(current_login)
+    user_permissions = get_user_permissions(current_user_info['user_type'])
+    
+    if not user_permissions['can_manage_users']:
+        raise HTTPException(status_code=403, detail="У вас нет прав для удаления пользователей")
+    
     try:
         conn = sqlite3.connect('users.db')
         cursor = conn.cursor()
@@ -432,6 +491,7 @@ def quiz_form(request: Request, idx: int = 0):
         return RedirectResponse(url="/", status_code=303)
     
     user_info = get_user_full_info(login)
+    user_permissions = get_user_permissions(user_info['user_type'])
     
     if idx >= len(questions):
         return RedirectResponse(url="/final_results", status_code=303)
@@ -445,7 +505,8 @@ def quiz_form(request: Request, idx: int = 0):
         "current_answer": current_answer,
         "total_questions": len(questions),
         "questions": questions,
-        "user_info": user_info
+        "user_info": user_info,
+        "user_permissions": user_permissions
     })
 
 @app.post("/answer")
@@ -523,6 +584,8 @@ def show_final_results(request: Request):
     if not user:
         return RedirectResponse(url="/", status_code=303)
     
+    user_info = get_user_full_info(user)
+    user_permissions = get_user_permissions(user_info['user_type'])
     global user_answers, questions
     
     if len(user_answers) < len(questions):
@@ -533,7 +596,8 @@ def show_final_results(request: Request):
                     "unanswered_index": i,
                     "total_questions": len(questions),
                     "answered_count": sum(1 for ans in user_answers if ans and ans.strip()),
-                    "username": user
+                    "user_info": user_info,
+                    "user_permissions": user_permissions
                 })
     
     user_embeddings = model.encode(user_answers, convert_to_tensor=True)
@@ -572,7 +636,8 @@ def show_final_results(request: Request):
         "total_questions": total_questions,
         "percentage": f"{percentage:.1f}",
         "threshold": THRESHOLD,
-        "username": user
+        "user_info": user_info,
+        "user_permissions": user_permissions
     })
 
 @app.get("/logout")
