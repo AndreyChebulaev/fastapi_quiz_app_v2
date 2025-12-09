@@ -39,8 +39,7 @@ all_embeddings = []
 UPLOAD_DIR = "uploaded_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Хранение сессий (в реальном приложении используйте Redis или базу данных)
-active_sessions = {}
+
 
 def hash_password(password: str) -> str:
     """Хеширует пароль с использованием SHA-256 и соли"""
@@ -50,12 +49,6 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Проверяет пароль"""
     return hash_password(plain_password) == hashed_password
-
-def create_session(username: str) -> str:
-    """Создает сессию для пользователя"""
-    session_token = secrets.token_hex(32)
-    active_sessions[session_token] = username
-    return session_token
 
 def get_user_from_session(request: Request) -> Optional[str]:
     """Получает пользователя из сессии"""
@@ -209,6 +202,7 @@ def login(
             })
         
         # Создаем сессию и устанавливаем cookie
+        from session_manager import create_session
         session_token = create_session(username)
         response = RedirectResponse(url="/select", status_code=303)
         response.set_cookie(key="session_token", value=session_token, httponly=True)
