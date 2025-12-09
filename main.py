@@ -19,12 +19,12 @@ from datetime import datetime
 import main2
 import app
 from session_manager import create_session, active_sessions
-
+from app import app as app_v2
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-app.mount("/v2", app.app)
+app.mount("/v2", app_v2)
 app.mount("/main2", main2.app)
 
 # Глобальные данные
