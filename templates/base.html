@@ -3,9 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Quiz System{% endblock %}</title>
+    <title>{% block title %}Excel Questions Editor{% endblock %}</title>
+    <!-- Добавляем подключение общих стилей для навигации -->
     <link rel="stylesheet" href="/static/style.css">
     <style>
+        /* Базовый сброс - как во втором файле */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Оригинальные стили body из первого файла */
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #ffffff;
+            min-height: 100vh;
+        }
+        
+        /* ========= СТИЛИ НАВИГАЦИИ (из второго файла) ========= */
         .navbar {
             background: #2c3e50;
             color: white;
@@ -26,12 +42,16 @@
         .nav-title {
             font-size: 1.5rem;
             font-weight: bold;
+            color: white;
+            margin: 0; /* Важно: убираем отступы */
         }
 
         .nav-menu {
             display: flex;
             list-style: none;
             gap: 2rem;
+            margin: 0;
+            padding: 0;
         }
 
         .nav-link {
@@ -46,199 +66,307 @@
             background-color: #34495e;
         }
         
-        /* Стили для страницы викторины */
-        .progress {
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        .question-container {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        #user_answer {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-        .nav-button {
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            border: none;
-            color: white;
-        }
-        .nav-button:hover {
-            opacity: 0.9;
-        }
-        .navigation-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        .finish-button {
-            background-color: #ff9800;
-        }
-        .finish-button:hover {
-            background-color: #f57c00;
-        }
-        .next-button {
-            background-color: #4CAF50;
-        }
-        .next-button:hover {
-            background-color: #45a049;
-        }
-        .prev-button {
-            background-color: #2196F3;
-        }
-        .prev-button:hover {
-            background-color: #1976D2;
+        /* ========= ВСЕ ОСТАЛЬНЫЕ СТИЛИ - ПОЛНОСТЬЮ ИЗ ПЕРВОГО ФАЙЛА ========= */
+        
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-top: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #e1e8ed;
         }
         
-        /* Стили для страницы с файлами */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        .form-group { 
+            margin-bottom: 20px; 
         }
-        .message {
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #2c3e50;
+            font-size: 14px;
         }
-        .success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border: 1px solid #4caf50;
+        
+        input[type="text"] { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 2px solid #e1e8ed; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            transition: all 0.3s ease;
         }
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            border: 1px solid #f44336;
+        
+        input[type="text"]:focus { 
+            border-color: #3498db; 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
-        .upload-section {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 30px;
-        }
-        .file-list {
-            margin: 20px 0;
-        }
-        .file-item {
-            background: #f9f9f9;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
+        
+        button { 
+            background: #3498db; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
             align-items: center;
+            gap: 8px;
         }
-        .file-info {
-            flex-grow: 1;
+        
+        button:hover { 
+            background: #2980b9; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .file-actions {
+        
+        .question-block { 
+            border: 2px solid #e1e8ed; 
+            padding: 25px; 
+            margin-bottom: 25px; 
+            border-radius: 12px; 
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .question-block:hover {
+            border-color: #bdc3c7;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .question-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 2px solid #e1e8ed; 
+        }
+        
+        .question-header h3 { 
+            margin: 0; 
+            color: #2c3e50; 
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .actions { 
+            margin-top: 30px; 
+            padding-top: 25px; 
+            border-top: 2px solid #e1e8ed; 
+            text-align: center;
             display: flex;
-            gap: 10px;
-        }
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-select {
-            background: #4CAF50;
-            color: white;
-        }
-        .btn-delete {
-            background: #f44336;
-            color: white;
-        }
-        .btn-upload {
-            background: #2196F3;
-            color: white;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .user-info {
-            text-align: right;
-            margin-bottom: 20px;
-            color: #666;
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .user-details {
-            font-size: 14px;
-            margin-top: 5px;
-        
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         
-        /* Стили для страницы входа */
-        .login-container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header {
+        .file-info { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
             text-align: center;
-            margin-bottom: 30px;
         }
-        .form-group {
-            margin-bottom: 20px;
+        
+        .file-info h3 { 
+            margin: 0 0 10px 0; 
+            color: #2c3e50;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+        
+        .answers-container { 
+            margin-bottom: 15px; 
         }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
+        
+        .answer-row { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 12px; 
+            gap: 12px; 
         }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        
+        .answer-row input { 
+            flex: 1; 
+            margin-bottom: 0; 
+        }
+        
+        .btn-remove-answer { 
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            width: 36px; 
+            height: 36px; 
             cursor: pointer;
             font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
         }
-        .btn:hover {
-            background: #45a049;
+        
+        .btn-remove-answer:hover { 
+            background: #c0392b; 
+            transform: scale(1.1);
         }
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .demo-info {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
-            text-align: center;
+        
+        .btn-add-answer { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-add-answer:hover { 
+            background: #219a52; 
+        }
+        
+        .btn-remove-question { 
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-remove-question:hover { 
+            background: #c0392b; 
+        }
+        
+        .home-container {
+            text-align: center;
+            padding: 10px 0;
+        }
+        
+        .home-actions {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        
+        .action-card {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 280px;
+            max-width: 320px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            flex: 1;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #3498db;
+        }
+        
+        .action-card h3 {
+            margin: 0 0 12px 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+        
+        .home-btn {
+            background: #3498db;
+            padding: 12px 20px;
+            font-size: 14px;
+            min-width: 180px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .home-btn.create {
+            background: #27ae60;
+        }
+        
+        .home-btn.create:hover {
+            background: #219a52;
+        }
+        
+        .file-upload-wrapper {
+            margin: 15px 0;
+        }
+        
+        .file-upload-label {
+            display: block;
+            background: #f8f9fa;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload-label:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        /* Адаптивность из первого файла */
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px;
+                padding: 20px;
+            }
+            .home-actions {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            .action-card {
+                min-width: 100%;
+                margin: 0 10px;
+            }
+            .question-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -258,8 +386,8 @@
         </div>
     </nav>
     
-    <main class="main-content">
+    <div class="container">
         {% block content %}{% endblock %}
-    </main>
+    </div>
 </body>
 </html>
