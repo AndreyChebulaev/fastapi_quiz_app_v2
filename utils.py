@@ -85,3 +85,20 @@ def create_new_excel_file(file_path, data):
     
     wb.save(file_path)
     wb.close()
+
+
+def check_user_permission(user_type: str, required_permission: str) -> bool:
+    """
+    Проверяет права доступа пользователя
+    required_permission: 
+    - 'admin' - доступ только для администраторов
+    - 'teacher' - доступ для преподавателей и администраторов  
+    - 'student' - доступ для всех пользователей
+    """
+    if required_permission == 'admin':
+        return user_type == 'admin'
+    elif required_permission == 'teacher':
+        return user_type in ['teacher', 'admin']
+    elif required_permission == 'student':
+        return user_type in ['student', 'teacher', 'admin']
+    return False
