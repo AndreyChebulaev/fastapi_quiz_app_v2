@@ -29,6 +29,22 @@
     </div>
     {% endif %}
 
+    <!-- Форма загрузки файла -->
+    {% if user_permissions.can_upload_files %}
+    <div class="upload-section">
+        <h3>📤 Загрузить новый тест</h3>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="file-upload-wrapper">
+                <label for="file" class="file-upload-label">
+                    📎 Выберите Excel файл (.xlsx)
+                </label>
+                <input type="file" id="file" name="file" accept=".xlsx" required style="display: none;">
+            </div>
+            <button type="submit" class="btn btn-upload">Загрузить файл</button>
+        </form>
+    </div>
+    {% endif %}
+
     <div class="file-list">
         <h3>Файлы на сервере</h3>
         {% if files %}
@@ -44,7 +60,9 @@
                         <input type="hidden" name="filename" value="{{ file.name }}">
                         <button type="submit" class="btn btn-select">Начать тест</button>
                     </form>
+                    {% if user_permissions.can_delete_files %}
                     <button onclick="deleteFile('{{ file.name }}')" class="btn btn-delete">Удалить</button>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -57,6 +75,13 @@
     </div>
 
     <script>
+        // Добавляем обработчик для выбора файла
+        document.getElementById('file').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
+            const fileLabel = document.querySelector('.file-upload-label');
+            fileLabel.innerHTML = `📎 Выбран файл: ${fileName}`;
+        });
+        
         async function deleteFile(filename) {
             if (confirm(`Удалить файл ${filename}?`)) {
                 const formData = new FormData();
