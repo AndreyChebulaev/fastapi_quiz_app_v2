@@ -14,16 +14,17 @@ import sqlite3
 import hashlib
 import secrets
 from fastapi.middleware.cors import CORSMiddleware
-import app as appp
+
 from datetime import datetime
 import main2
+import app
 from session_manager import create_session, active_sessions
 
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-app.mount("/v2", appp.app)
+app.mount("/v2", app.app)
 app.mount("/main2", main2.app)
 
 # Глобальные данные
@@ -88,7 +89,7 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         cursor.execute(
             "INSERT INTO users (user_type, last_name, first_name, middle_name, group_name, login, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("admin", "Иванов", "Иван", "Иванович", "Администраторы", "admin", "admin123")
+            ("admin", "Иванов", "Иван", "Иванович", "Администраторы", "admin", hash_password("admin123"))
         )
         print("Создан тестовый пользователь: admin / admin123")
     
@@ -642,5 +643,20 @@ def logout():
     response = RedirectResponse(url="/", status_code=303)
     response.delete_cookie("session_token")
     return response
+
+@app.get("/app")
+def redirect_to_editor(request: Request):
+    """Перенаправление на редактор тестов"""
+    user = get_user_from_session(request)
+    if not user:
+        return RedirectResponse(url="/", status_code=303)
+    
+    user_info = get_user_full_info(user)
+    user_permissions = get_user_permissions(user_info['user_type'])
+    
+    if not user_permissions['can_edit_tests']:
+        return RedirectResponse(url="/select", status_code=303)
+    
+    return RedirectResponse(url="/main2", status_code=307)
 # Для запуска:
 # uvicorn main:app --reload
