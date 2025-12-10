@@ -58,7 +58,7 @@
                 <div class="file-actions">
                     <form action="/select" method="post" style="display: inline;">
                         <input type="hidden" name="filename" value="{{ file.name }}">
-                        <button type="submit" class="btn btn-select">Начать тест</button>
+                        <button type="submit" class="btn btn-primary">Начать тест</button>
                     </form>
                     {% if user_permissions.can_delete_files %}
                     <button onclick="deleteFile('{{ file.name }}')" class="btn btn-delete">Удалить</button>
