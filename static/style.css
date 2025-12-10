@@ -11,6 +11,13 @@ body {
     background-color: #f4f4f4;
 }
 
+body.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .navbar {
     background: #2c3e50;
     color: white;
@@ -586,6 +593,13 @@ label {
     transform: translateY(-1px);
 }
 
+.file-name-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
 .file-info {
     flex: 1;
     padding-right: 1rem;
@@ -642,7 +656,7 @@ label {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
 }
 
 .nav-button {

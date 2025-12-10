@@ -17,26 +17,27 @@
                required autofocus
                placeholder="Вводите свой ответ здесь...">
         
-        <div class="navigation-buttons">
-    {% if idx > 0 %}
-    <button type="button" onclick="goToPrevious()" class="nav-button prev-button">
-        ← Предыдущий
-    </button>
-    {% else %}
-    <div></div>
-    {% endif %}
+    </form>
     
-    {% if idx + 1 == questions|length %}
-    <button type="button" onclick="finishTest()" class="nav-button finish-button">
-        Завершить тест
-    </button>
-    {% else %}
-    <button type="button" onclick="handleNext()" class="nav-button next-button">
-        Следующий →
-    </button>
-    {% endif %}
-</div>
-</form>
+    <div class="navigation-buttons">
+        {% if idx > 0 %}
+        <button type="button" onclick="goToPrevious()" class="nav-button prev-button">
+            ← Предыдущий
+        </button>
+        {% else %}
+        <div></div>
+        {% endif %}
+        
+        {% if idx + 1 == questions|length %}
+        <button type="button" onclick="finishTest()" class="nav-button finish-button">
+            Завершить тест
+        </button>
+        {% else %}
+        <button type="button" onclick="handleNext()" class="nav-button next-button">
+            Следующий →
+        </button>
+        {% endif %}
+    </div>
 
 <script>
     async function handleNext() {
