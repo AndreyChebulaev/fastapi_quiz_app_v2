@@ -2,20 +2,10 @@
 {% block title %}Quiz System - Select Test File{% endblock %}
 {% block content %}
     <div class="container">
-        <div class="user-info">
-            <strong>👤 {{ user_info.full_name }}</strong>
-            <div class="user-details">
-                Группа: {{ user_info.group_name }} | 
-                Роль: {{ user_info.user_type }} |
-                Логин: {{ user_info.login }}
-            </div>
-            <a href="/logout" style="color: #666; text-decoration: none;">🚪 Выйти</a>
+        <div class="header">
+            <h1>📝 Quiz System</h1>
+            <p>Выберите тест для прохождения</p>
         </div>
-    
-    <div class="header">
-        <h1>📝 Quiz System</h1>
-        <p>Выберите тест для прохождения</p>
-    </div>
     
     {% if message %}
     <div class="message success">

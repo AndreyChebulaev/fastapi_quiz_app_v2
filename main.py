@@ -171,6 +171,21 @@ def get_user_permissions(user_type: str):
     }
     return permissions
 
+def get_template_context(request: Request):
+    """Возвращает контекст для шаблонов с информацией о пользователе"""
+    login = get_user_from_session(request)
+    if login:
+        user_info = get_user_full_info(login)
+        user_permissions = get_user_permissions(user_info['user_type'])
+        return {
+            "user_info": user_info,
+            "user_permissions": user_permissions
+        }
+    return {
+        "user_info": None,
+        "user_permissions": None
+    }
+
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
     """Страница входа"""
@@ -178,7 +193,9 @@ def login_page(request: Request):
     if get_user_from_session(request):
         return RedirectResponse(url="/select", status_code=303)
     
-    return templates.TemplateResponse("login.html", {"request": request})
+    context = get_template_context(request)
+    context["request"] = request
+    return templates.TemplateResponse("login.html", context)
 
 @app.post("/login", response_class=HTMLResponse)
 def login(
@@ -190,17 +207,21 @@ def login(
     try:
         user = get_user_by_login(username)  # Передаем username как логин
         if not user:
-            return templates.TemplateResponse("login.html", {
+            context = get_template_context(request)
+            context.update({
                 "request": request,
                 "error": "Неверный логин или пароль"
             })
+            return templates.TemplateResponse("login.html", context)
         
         # Проверяем пароль (внимание: пароль хранится в открытом виде!)
         if password != user["password"]:
-            return templates.TemplateResponse("login.html", {
+            context = get_template_context(request)
+            context.update({
                 "request": request,
                 "error": "Неверный логин или пароль"
             })
+            return templates.TemplateResponse("login.html", context)
         
         # Создаем сессию и устанавливаем cookie
         from session_manager import create_session
@@ -210,10 +231,12 @@ def login(
         return response
         
     except Exception as e:
-        return templates.TemplateResponse("login.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "error": f"Ошибка входа: {str(e)}"
         })
+        return templates.TemplateResponse("login.html", context)
 
 @app.get("/select", response_class=HTMLResponse)
 def select_file_page(request: Request):
@@ -226,12 +249,13 @@ def select_file_page(request: Request):
     user_permissions = get_user_permissions(user_info['user_type'])
     files = get_uploaded_files()
     
-    return templates.TemplateResponse("select.html", {
+    context = get_template_context(request)
+    context.update({
         "request": request,
-        "files": files,
-        "user_info": user_info,
-        "user_permissions": user_permissions
+        "files": files
     })
+    
+    return templates.TemplateResponse("select.html", context)
 
 @app.post("/upload", response_class=HTMLResponse)
 async def upload_file(request: Request, file: UploadFile = File(...)):
@@ -247,13 +271,13 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
     
     if not user_permissions['can_upload_files']:
         files = get_uploaded_files()
-        return templates.TemplateResponse("select.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "files": files,
-            "user_info": user_info,
-            "user_permissions": user_permissions,
             "error": "У вас нет прав для загрузки файлов"
         })
+        return templates.TemplateResponse("select.html", context)
     
     try:
         # Сохраняем файл в папку uploaded_files
@@ -263,23 +287,23 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         
         # Возвращаем на страницу выбора файлов с сообщением об успехе
         files = get_uploaded_files()
-        return templates.TemplateResponse("select.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "files": files,
-            "user_info": user_info,
-            "user_permissions": user_permissions,
             "message": f"Файл {file.filename} успешно загружен!"
         })
+        return templates.TemplateResponse("select.html", context)
         
     except Exception as e:
         files = get_uploaded_files()
-        return templates.TemplateResponse("select.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "files": files,
-            "user_info": user_info,
-            "user_permissions": user_permissions,
             "error": f"Ошибка загрузки файла: {str(e)}"
         })
+        return templates.TemplateResponse("select.html", context)
 
 async def load_quiz_data(request: Request, file_path: str):
     """Загружает данные викторины из файла и начинает тест"""
@@ -304,13 +328,13 @@ async def load_quiz_data(request: Request, file_path: str):
         
     except Exception as e:
         files = get_uploaded_files()
-        user = get_user_from_session(request)
-        return templates.TemplateResponse("select.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "files": files,
-            "username": user,
             "error": f"Ошибка загрузки теста: {str(e)}"
         })
+        return templates.TemplateResponse("select.html", context)
 
 @app.post("/select", response_class=HTMLResponse)
 async def select_existing_file(request: Request, filename: str = Form(...)):
@@ -323,12 +347,13 @@ async def select_existing_file(request: Request, filename: str = Form(...)):
     file_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(file_path):
         files = get_uploaded_files()
-        return templates.TemplateResponse("select.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "files": files,
-            "username": user,
             "error": f"Файл {filename} не найден на сервере"
         })
+        return templates.TemplateResponse("select.html", context)
     
     # Загружаем данные и начинаем тест
     return await load_quiz_data(request, file_path)
@@ -409,12 +434,13 @@ def admin_users_page(request: Request):
             "created_at": user[8]
         })
     
-    return templates.TemplateResponse("admin_users.html", {
+    context = get_template_context(request)
+    context.update({
         "request": request,
-        "users": users,
-        "user_info": user_info,
-        "user_permissions": user_permissions
+        "users": users
     })
+    
+    return templates.TemplateResponse("admin_users.html", context)
 
 @app.post("/admin/add_user")
 async def add_user(
@@ -495,16 +521,17 @@ def quiz_form(request: Request, idx: int = 0):
     
     current_answer = user_answers[idx] if idx < len(user_answers) else ""
     
-    return templates.TemplateResponse("quiz.html", {
+    context = get_template_context(request)
+    context.update({
         "request": request,
         "question": questions[idx],
         "idx": idx,
         "current_answer": current_answer,
         "total_questions": len(questions),
-        "questions": questions,
-        "user_info": user_info,
-        "user_permissions": user_permissions
+        "questions": questions
     })
+    
+    return templates.TemplateResponse("quiz.html", context)
 
 @app.post("/answer")
 async def save_answer(request: Request, idx: int = Form(...), user_answer: str = Form(...)):
@@ -588,14 +615,14 @@ def show_final_results(request: Request):
     if len(user_answers) < len(questions):
         for i in range(len(questions)):
             if i >= len(user_answers) or not user_answers[i].strip():
-                return templates.TemplateResponse("complete_all.html", {
+                context = get_template_context(request)
+                context.update({
                     "request": request,
                     "unanswered_index": i,
                     "total_questions": len(questions),
-                    "answered_count": sum(1 for ans in user_answers if ans and ans.strip()),
-                    "user_info": user_info,
-                    "user_permissions": user_permissions
+                    "answered_count": sum(1 for ans in user_answers if ans and ans.strip())
                 })
+                return templates.TemplateResponse("complete_all.html", context)
     
     user_embeddings = model.encode(user_answers, convert_to_tensor=True)
     results = []
@@ -626,16 +653,17 @@ def show_final_results(request: Request):
     total_questions = len(questions)
     percentage = (total_correct / total_questions) * 100 if total_questions > 0 else 0
     
-    return templates.TemplateResponse("final_results.html", {
+    context = get_template_context(request)
+    context.update({
         "request": request,
         "results": results,
         "total_correct": total_correct,
         "total_questions": total_questions,
         "percentage": f"{percentage:.1f}",
-        "threshold": THRESHOLD,
-        "user_info": user_info,
-        "user_permissions": user_permissions
+        "threshold": THRESHOLD
     })
+    
+    return templates.TemplateResponse("final_results.html", context)
 
 @app.get("/logout")
 def logout():
