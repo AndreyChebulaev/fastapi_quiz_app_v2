@@ -5,14 +5,108 @@ from fastapi.responses import RedirectResponse
 import random
 import string
 import pandas as pd
+import sqlite3
 from io import StringIO
 from database import init_db, get_db_connection
 from models import UserCreate, UserUpdate
+import hashlib
 
 app = FastAPI(title="User Registration System")
 
 # Инициализация базы данных
 init_db()
+
+def hash_password(password: str) -> str:
+    """Хеширует пароль с использованием SHA-256 и соли"""
+    salt = "quiz_system_salt"  # В реальном приложении используйте уникальную соль для каждого пользователя
+    return hashlib.sha256((password + salt).encode()).hexdigest()
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Проверяет пароль"""
+    return hash_password(plain_password) == hashed_password
+
+def get_user_from_session(request: Request) -> str:
+    """Получает пользователя из сессии"""
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        # Импортируем функцию из основного приложения для получения пользователя из сессии
+        try:
+            from session_manager import get_user_from_session as get_session_user
+            return get_session_user(session_token)
+        except ImportError:
+            # Если session_manager недоступен, возвращаем None
+            return None
+    return None
+
+def get_user_by_login(login: str):
+    """Получает пользователя из базы данных по логину"""
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, user_type, last_name, first_name, middle_name, group_name, login, password, created_at 
+        FROM users WHERE login = ?
+    """, (login,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        return {
+            "id": user[0],
+            "user_type": user[1],
+            "last_name": user[2],
+            "first_name": user[3],
+            "middle_name": user[4],
+            "group_name": user[5],
+            "login": user[6],
+            "password": user[7],  # Внимание: хранится в открытом виде!
+            "created_at": user[8]
+        }
+    return None
+
+def get_user_full_info(login: str):
+    """Получает полную информацию о пользователе для отображения"""
+    user = get_user_by_login(login)
+    if user:
+        # Формируем полное имя
+        full_name = f"{user['last_name']} {user['first_name']}"
+        if user['middle_name']:
+            full_name += f" {user['middle_name']}"
+        
+        return {
+            "login": user['login'],
+            "full_name": full_name,
+            "user_type": user['user_type'],
+            "group_name": user['group_name'],
+            "created_at": user['created_at']
+        }
+    return None
+
+def get_user_permissions(user_type: str):
+    """Возвращает доступные права пользователя"""
+    permissions = {
+        'can_view_tests': True,  # Все могут видеть тесты
+        'can_take_tests': True,  # Все могут проходить тесты
+        'can_upload_files': user_type in ['teacher', 'admin'],  # Только преподаватели и админы могут загружать файлы
+        'can_delete_files': user_type in ['teacher', 'admin'],  # Только преподаватели и админы могут удалять файлы
+        'can_manage_users': user_type == 'admin',  # Только админы могут управлять пользователями
+        'can_edit_tests': user_type in ['teacher', 'admin'],  # Только преподаватели и админы могут редактировать тесты
+    }
+    return permissions
+
+def get_template_context(request: Request):
+    """Возвращает контекст для шаблонов с информацией о пользователе"""
+    login = get_user_from_session(request)
+    if login:
+        user_info = get_user_full_info(login)
+        user_permissions = get_user_permissions(user_info['user_type'])
+        return {
+            "user_info": user_info,
+            "user_permissions": user_permissions
+        }
+    return {
+        "user_info": None,
+        "user_permissions": None
+    }
 
 # Настройка шаблонов и статических файлов
 templates = Jinja2Templates(directory="templatesrg")
@@ -126,11 +220,15 @@ def save_user_to_db(user_data: dict) -> dict:
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    context = get_template_context(request)
+    context["request"] = request
+    return templates.TemplateResponse("index.html", context)
 
 @app.get("/register")
 async def show_registration_form(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    context = get_template_context(request)
+    context["request"] = request
+    return templates.TemplateResponse("register.html", context)
 
 @app.post("/register")
 async def register_user(
@@ -157,10 +255,12 @@ async def register_user(
     
     # Проверяем, существует ли пользователь
     if user_exists(last_name, first_name, middle_name, user_type):
-        return templates.TemplateResponse("register.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "error": f"Пользователь {last_name} {first_name} {middle_name or ''} уже существует в системе"
         })
+        return templates.TemplateResponse("register.html", context)
     
     # Сохраняем пользователя
     result = save_user_to_db(user_data)
@@ -169,7 +269,9 @@ async def register_user(
 
 @app.get("/upload")
 async def show_upload_form(request: Request):
-    return templates.TemplateResponse("upload.html", {"request": request})
+    context = get_template_context(request)
+    context["request"] = request
+    return templates.TemplateResponse("upload.html", context)
 
 @app.post("/upload")
 async def upload_users_file(request: Request, file: UploadFile = File(...)):
@@ -263,11 +365,14 @@ async def upload_users_file(request: Request, file: UploadFile = File(...)):
                 results['failed'] += 1
                 results['errors'].append(f"Строка {index + 2}: {str(e)}")
         
-        return templates.TemplateResponse("upload_result.html", {
+        context = get_template_context(request)
+        context.update({
             "request": request,
             "results": results,
             "total_processed": len(df)
         })
+        
+        return templates.TemplateResponse("upload_result.html", context)
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Ошибка обработки файла: {str(e)}")
@@ -324,7 +429,8 @@ async def list_users(
     teachers = [dict(user) for user in users if user['user_type'] == 'teacher']
     students = [dict(user) for user in users if user['user_type'] == 'student']
     
-    return templates.TemplateResponse("users_list.html", {
+    context = get_template_context(request)
+    context.update({
         "request": request,
         "teachers": teachers,
         "students": students,
@@ -334,6 +440,8 @@ async def list_users(
         "group_filter": group_filter,
         "available_groups": groups
     })
+    
+    return templates.TemplateResponse("users_list.html", context)
 
 @app.get("/users/{user_id}/edit")
 async def edit_user_form(request: Request, user_id: int):
@@ -345,10 +453,13 @@ async def edit_user_form(request: Request, user_id: int):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
     
-    return templates.TemplateResponse("edit_user.html", {
+    context = get_template_context(request)
+    context.update({
         "request": request,
         "user": dict(user)
     })
+    
+    return templates.TemplateResponse("edit_user.html", context)
 
 @app.post("/users/{user_id}/update")
 async def update_user(user_id: int, request: Request):

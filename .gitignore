@@ -1,23 +1,27 @@
 ```
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env/
-venv/
-.venv/
-.eggs/
-.egg-info/
-dist/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
 
-# Logs
-*.log
-
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
@@ -28,14 +32,17 @@ build/
 *.swp
 *.swo
 
+# Logs
+*.log
+
 # OS
 .DS_Store
 Thumbs.db
 
 # Coverage
 .coverage
-htmlcov/
 coverage/
+htmlcov/
 
 # Testing
 .pytest_cache/

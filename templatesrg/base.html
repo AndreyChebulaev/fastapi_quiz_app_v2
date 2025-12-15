@@ -5,6 +5,146 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Quiz System{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin: 0;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-link:hover {
+            background-color: #34495e;
+        }
+
+        /* User profile dropdown styles */
+        .user-profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-profile-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-profile-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: white;
+            min-width: 250px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .dropdown-content.show {
+            display: block;
+        }
+        
+        .user-details {
+            padding: 15px;
+            color: #2c3e50;
+        }
+        
+        .user-details p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .user-details p strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .logout-link {
+            display: block;
+            padding: 12px 15px;
+            color: #e74c3c;
+            text-decoration: none;
+            border-top: 1px solid #e1e8ed;
+            transition: background-color 0.3s;
+        }
+        
+        .logout-link:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+    
+    <script>
+        // Обработка открытия/закрытия выпадающего меню профиля
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+                
+                // Закрытие выпадающего меню при клике вне его области
+                document.addEventListener('click', function(e) {
+                    if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
 </head>
 <body>
     <nav class="navbar">
@@ -15,6 +155,23 @@
                 <li><a href="/main2" class="nav-link">Редактор тестов</a></li>
                 <li><a href="/v2" class="nav-link">Регистрация пользователей</a></li>
             </ul>
+            {% if user_info %}
+            <div class="user-profile-dropdown">
+                <button class="user-profile-btn" id="profileBtn">
+                    👤 {{ user_info.full_name }}
+                </button>
+                <div class="dropdown-content" id="profileDropdown">
+                    <div class="user-details">
+                        <p><strong>{{ user_info.full_name }}</strong></p>
+                        <p>Группа: {{ user_info.group_name }}</p>
+                        <p>Роль: {{ user_info.user_type }}</p>
+                        <p>Логин: {{ user_info.login }}</p>
+                    </div>
+                    <hr>
+                    <a href="/logout" class="logout-link">🚪 Выйти</a>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </nav>
     
