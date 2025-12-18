@@ -2,13 +2,12 @@
 
 {% block content %}
 <h2>Редактирование вопросов и ответов</h2>
-<form action="/main2/save" method="post" id="main-form">
+<form method="post" id="main-form">
     <input type="hidden" name="filename" value="{{ filename }}">
-    <input type="hidden" name="original_data" value="{{ original_data }}">
     
     <div class="file-info">
         <h3>📄 Файл: {{ filename }}</h3>
-        <p style="margin: 0; color: #666;">Используйте кнопки ниже для управления вопросами и ответами</p>
+        <p style="margin: 0; color: #666;">Формат: Excel (.xlsx) - 1-й столбец: вопрос, 2-й столбец: ответы в кавычках</p>
     </div>
     
     <div id="questions-container">
@@ -23,19 +22,23 @@
             
             <div class="form-group">
                 <label>Текст вопроса:</label>
-                <input type="text" name="questions" value="{{ question.question }}" 
-                       placeholder="Введите текст вопроса..." required
-                       style="padding: 15px; font-size: 15px;">
+                <textarea 
+                    name="questions" 
+                    class="question-textarea"
+                    placeholder="Введите текст вопроса..." 
+                    required
+                    rows="3">{{ question.question }}</textarea>
             </div>
             
             <div class="form-group">
-                <label>📝 Ответы:</label>
+                <label>📝 Ответы (каждый ответ на отдельной строке):</label>
                 <div class="answers-container" id="answers-{{ loop.index0 }}">
                     {% for answer in question.answers %}
                     <div class="answer-row">
-                        <input type="text" class="answer-input" value="{{ answer }}" 
-                               placeholder="Введите вариант ответа..."
-                               style="padding: 12px;">
+                        <textarea 
+                            class="answer-textarea"
+                            placeholder="Введите вариант ответа..."
+                            rows="2">{{ answer }}</textarea>
                         <button type="button" class="btn-remove-answer" onclick="removeAnswer(this)">×</button>
                     </div>
                     {% endfor %}
@@ -49,12 +52,15 @@
     </div>
     
     <div class="actions">
-        <button type="button" onclick="addQuestion()">
+        <button type="button" onclick="addQuestion()" class="btn-add-question">
             ➕ Добавить вопрос
         </button>
-        <button type="submit" style="background: linear-gradient(135deg, #27ae60, #219a52);">
-            💾 Сохранить изменения
+        <button type="submit" class="btn-save" style="background: linear-gradient(135deg, #27ae60, #219a52);">
+            💾 Сохранить в Excel
         </button>
+        <a href="/select" class="btn-cancel">
+            ❌ Отмена
+        </a>
     </div>
 </form>
 
@@ -79,18 +85,20 @@ function addQuestion() {
         
         <div class="form-group">
             <label>Текст вопроса:</label>
-            <input type="text" name="questions" value="" 
-                   placeholder="Введите текст вопроса..." required
-                   style="padding: 15px; font-size: 15px;">
+            <textarea name="questions" 
+                   class="question-textarea"
+                   placeholder="Введите текст вопроса..." 
+                   required
+                   rows="3"></textarea>
         </div>
         
         <div class="form-group">
-            <label>📝 Ответы:</label>
+            <label>📝 Ответы (каждый ответ на отдельной строке):</label>
             <div class="answers-container" id="answers-${newIndex}">
                 <div class="answer-row">
-                    <input type="text" class="answer-input" value="" 
+                    <textarea class="answer-textarea"
                            placeholder="Введите вариант ответа..."
-                           style="padding: 12px;">
+                           rows="2"></textarea>
                     <button type="button" class="btn-remove-answer" onclick="removeAnswer(this)">×</button>
                 </div>
             </div>
@@ -143,9 +151,9 @@ function addAnswer(questionIndex) {
     const answerRow = document.createElement('div');
     answerRow.className = 'answer-row';
     answerRow.innerHTML = `
-        <input type="text" class="answer-input" value="" 
+        <textarea class="answer-textarea"
                placeholder="Введите вариант ответа..."
-               style="padding: 12px;">
+               rows="2"></textarea>
         <button type="button" class="btn-remove-answer" onclick="removeAnswer(this)">×</button>
     `;
     answersContainer.appendChild(answerRow);
@@ -162,29 +170,244 @@ function removeAnswer(button) {
     }
 }
 
-// Подготовка данных перед отправкой формы
-document.getElementById('main-form').addEventListener('submit', function(e) {
-    // Собираем все ответы в строки с правильным форматированием кавычек
+// Обработка отправки формы
+document.getElementById('main-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Собираем данные
+    const formData = new FormData();
+    formData.append('filename', document.querySelector('input[name="filename"]').value);
+    
     const questionBlocks = document.querySelectorAll('.question-block');
+    const questions = [];
+    const answers = [];
     
-    // Очищаем старые скрытые поля
-    const oldHiddenInputs = this.querySelectorAll('input[name="answers"]');
-    oldHiddenInputs.forEach(input => input.remove());
-    
-    questionBlocks.forEach((block, index) => {
-        const answerInputs = block.querySelectorAll('.answer-input');
-        const answersArray = Array.from(answerInputs).map(input => input.value.trim()).filter(val => val);
+    questionBlocks.forEach((block) => {
+        // Вопрос
+        const questionTextarea = block.querySelector('.question-textarea');
+        questions.push(questionTextarea.value.trim());
         
-        // Правильно форматируем ответы с кавычками
-        const answersString = answersArray.map(answer => `"${answer}"`).join(',');
+        // Ответы
+        const answerTextareas = block.querySelectorAll('.answer-textarea');
+        const answersArray = Array.from(answerTextareas)
+            .map(textarea => textarea.value.trim())
+            .filter(val => val);
         
-        // Создаем скрытое поле для ответов
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'answers';
-        hiddenInput.value = answersString;
-        this.appendChild(hiddenInput);
+        // Сохраняем как JSON массив
+        answers.push(JSON.stringify(answersArray));
     });
+    
+    // Добавляем вопросы и ответы в formData
+    questions.forEach(q => formData.append('questions', q));
+    answers.forEach(a => formData.append('answers', a));
+    
+    // Показываем индикатор загрузки
+    const submitBtn = this.querySelector('.btn-save');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '⏳ Сохранение в Excel...';
+    submitBtn.disabled = true;
+    
+    try {
+        // Отправляем на сервер
+        const response = await fetch('/save_edit', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            // Можно перенаправить на список файлов
+            // window.location.href = '/select';
+        } else {
+            alert('❌ Ошибка: ' + result.error);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    } catch (error) {
+        alert('❌ Ошибка сети: ' + error);
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 });
 </script>
+
+<style>
+.question-block {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #007bff;
+}
+
+.question-header h3 {
+    margin: 0;
+    color: #007bff;
+}
+
+.btn-remove-question {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-remove-question:hover {
+    background: #c82333;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #495057;
+}
+
+.question-textarea,
+.answer-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.question-textarea:focus,
+.answer-textarea:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.answer-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+}
+
+.answer-row textarea {
+    flex: 1;
+}
+
+.btn-remove-answer {
+    background: #6c757d;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove-answer:hover {
+    background: #5a6268;
+}
+
+.btn-add-answer {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-add-answer:hover {
+    background: #138496;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #dee2e6;
+}
+
+.btn-add-question {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-add-question:hover {
+    background: #0069d9;
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #27ae60, #219a52);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-save:hover {
+    background: linear-gradient(135deg, #219a52, #1e8749);
+}
+
+.btn-cancel {
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-cancel:hover {
+    background: #c0392b;
+    color: white;
+    text-decoration: none;
+}
+
+.file-info {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 0 4px 4px 0;
+}
+
+.file-info h3 {
+    margin-top: 0;
+    color: #1976d2;
+}
+</style>
 {% endblock %}

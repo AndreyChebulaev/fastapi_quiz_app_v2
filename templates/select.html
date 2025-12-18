@@ -47,6 +47,10 @@
                                 <input type="hidden" name="filename" value="{{ file.name }}">
                                 <button type="submit" class="btn btn-primary">Начать тест</button>
                             </form>
+                            
+                            {% if user_permissions.can_delete_files %}
+                            <button onclick="editFile('{{ file.name }}')" class="btn btn-edit">Изменить</button>
+                            {% endif %}
                             {% if user_permissions.can_delete_files %}
                             <button onclick="deleteFile('{{ file.name }}')" class="btn btn-delete">Удалить</button>
                             {% endif %}
@@ -71,6 +75,11 @@
             const fileLabel = document.querySelector('.file-upload-label');
             fileLabel.innerHTML = `📎 Выбран файл: ${fileName}`;
         });
+        
+        // Функция для перенаправления на страницу редактирования
+        function editFile(filename) {
+            window.location.href = `/main2/edit/${encodeURIComponent(filename)}`;
+        }
         
         async function deleteFile(filename) {
             if (confirm(`Удалить файл ${filename}?`)) {

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException, Depends
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
@@ -13,6 +13,7 @@ import secrets
 import sys
 import importlib
 from session_manager import get_user_from_session as get_main_session_user
+import ast
 
 app = FastAPI(title="Excel Questions Editor")
 
@@ -306,3 +307,187 @@ async def create_new(request: Request):
         "user_permissions": user_permissions,
         "original_data": "[]"
     })
+
+
+
+@app.get("/edit/{filename}")
+async def edit(filename: str, request: Request):
+    user_login = get_user_from_session(request)
+    if not user_login:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=303)
+
+    # Проверяем права доступа
+    user_info = get_user_full_info(user_login)
+    user_permissions = get_user_permissions(user_info['user_type'])
+    
+    if not user_permissions['can_edit_tests']:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/select", status_code=303)
+    
+    # Путь к директории с файлами
+    FILES_DIR = Path("uploaded_files")  # или ваш путь
+    
+    file_path = FILES_DIR / filename
+    
+    if not file_path.exists():
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            content={"error": f"Файл {filename} не найден на сервере"},
+            status_code=404
+        )
+    
+    # Читаем Excel файл
+    try:
+        # Читаем Excel файл
+        df = pd.read_excel(file_path)
+        
+        # Преобразуем данные в нужный формат
+        questions_data = []
+        
+        for index, row in df.iterrows():
+            question_text = str(row.iloc[0]) if pd.notna(row.iloc[0]) else ""
+            
+            # Обрабатываем ответы (второй столбец)
+            answers = []
+            if len(row) > 1 and pd.notna(row.iloc[1]):
+                answers_str = str(row.iloc[1])
+                try:
+                    # Пытаемся распарсить как список в кавычках
+                    # Пример: "ответ1","ответ2","ответ3"
+                    answers = parse_answers_string(answers_str)
+                except:
+                    # Если не получается, разбиваем по запятым
+                    answers = [a.strip().strip('"').strip("'") for a in answers_str.split(',')]
+            
+            questions_data.append({
+                "question": question_text,
+                "answers": answers
+            })
+        
+        # Рендерим шаблон
+        from fastapi.templating import Jinja2Templates
+        templates = Jinja2Templates(directory="templates")
+        
+        return templates.TemplateResponse(
+            "edit.html",
+            {
+                "request": request,
+                "filename": filename,
+                "questions": questions_data,
+                "original_data": "excel_file"  # Флаг для типа файла
+            }
+        )
+        
+    except Exception as e:
+        import traceback
+        return JSONResponse(
+            content={"error": f"Ошибка чтения файла: {str(e)}\n{traceback.format_exc()}"},
+            status_code=500
+        )
+
+def parse_answers_string(answers_str: str) -> list:
+    """Парсит строку с ответами в кавычках"""
+    # Убираем лишние пробелы
+    answers_str = answers_str.strip()
+    
+    # Если строка уже похожа на список Python
+    if answers_str.startswith('[') and answers_str.endswith(']'):
+        try:
+            return ast.literal_eval(answers_str)
+        except:
+            pass
+    
+    # Разбиваем по кавычкам
+    answers = []
+    in_quote = False
+    current_answer = ""
+    
+    for char in answers_str:
+        if char == '"':
+            if in_quote:
+                # Закрывающая кавычка
+                if current_answer:
+                    answers.append(current_answer)
+                current_answer = ""
+            in_quote = not in_quote
+        elif char == ',' and not in_quote:
+            # Запятая вне кавычек - разделитель
+            if current_answer:
+                answers.append(current_answer.strip())
+                current_answer = ""
+        else:
+            if in_quote or char not in [' ', '\t', '\n']:
+                current_answer += char
+    
+    # Добавляем последний ответ
+    if current_answer.strip():
+        answers.append(current_answer.strip())
+    
+    return answers
+
+@app.post("/save_edit")
+async def save_edit(
+    request: Request,
+    filename: str = Form(...),
+    questions: list[str] = Form(...),
+    answers: list[str] = Form(...)
+):
+    user_login = get_user_from_session(request)
+    if not user_login:
+        return JSONResponse(
+            content={"error": "Не авторизован"},
+            status_code=401
+        )
+    
+    # Проверяем права
+    user_info = get_user_full_info(user_login)
+    user_permissions = get_user_permissions(user_info['user_type'])
+    
+    if not user_permissions['can_edit_tests']:
+        return JSONResponse(
+            content={"error": "Нет прав на редактирование"},
+            status_code=403
+        )
+    
+    # Формируем DataFrame для Excel
+    data = []
+    for i, question in enumerate(questions):
+        if i < len(answers):
+            try:
+                # Парсим JSON массив ответов
+                answers_list = json.loads(answers[i])
+                # Форматируем ответы в строку с кавычками
+                answers_str = ','.join([f'"{answer}"' for answer in answers_list])
+            except:
+                answers_str = answers[i]
+        else:
+            answers_str = ""
+        
+        data.append([question, answers_str])
+    
+    # Создаем DataFrame
+    df = pd.DataFrame(data, columns=["Вопрос", "Ответы"])
+    
+    # Сохраняем в Excel файл
+    FILES_DIR = Path("uploaded_files")
+    file_path = FILES_DIR / filename
+    
+    try:
+        # Сохраняем в Excel
+        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Тест')
+        
+        return JSONResponse(
+            content={
+                "success": True,
+                "message": f"Файл {filename} успешно сохранен",
+                "filename": filename
+            }
+        )
+    except Exception as e:
+        import traceback
+        return JSONResponse(
+            content={"error": f"Ошибка сохранения: {str(e)}\n{traceback.format_exc()}"},
+            status_code=500
+        )
