@@ -247,13 +247,7 @@ async def save_file(
                     "Answers": row[1] if len(row) > 1 else ""
                 })
         
-        return templates.TemplateResponse("view.html", {
-            "request": request,
-            "filename": output_filename,
-            "data": display_data,
-            "user_info": user_info,
-            "user_permissions": user_permissions
-        })
+        return RedirectResponse(url="/select", status_code=303)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка сохранения: {str(e)}")
@@ -340,13 +334,13 @@ async def edit(filename: str, request: Request):
     # Читаем Excel файл
     try:
         # Читаем Excel файл
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path, header=None)
         
         # Преобразуем данные в нужный формат
         questions_data = []
         
         for index, row in df.iterrows():
-            question_text = str(row.iloc[0]) if pd.notna(row.iloc[0]) else ""
+            question_text = str(row.iloc[0]) if len(row) > 0 and pd.notna(row.iloc[0]) else ""
             
             # Обрабатываем ответы (второй столбец)
             answers = []
@@ -374,7 +368,9 @@ async def edit(filename: str, request: Request):
                 "request": request,
                 "filename": filename,
                 "questions": questions_data,
-                "original_data": "excel_file"  # Флаг для типа файла
+                "original_data": "excel_file",  # Флаг для типа файла
+                "user_info": user_info,
+                "user_permissions": user_permissions
             }
         )
         
@@ -465,18 +461,15 @@ async def save_edit(
         
         data.append([question, answers_str])
     
-    # Создаем DataFrame
-    df = pd.DataFrame(data, columns=["Вопрос", "Ответы"])
-    
     # Сохраняем в Excel файл в правильной директории
     FILES_DIR = Path("uploaded_files")
     file_path = FILES_DIR / filename
-    
+
     try:
-        # Сохраняем в Excel
-        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Тест')
-        
+        # Используем нашу утилиту для сохранения без заголовков
+        save_excel_file(str(file_path), data)
+
+        # Возвращаем JSON ответ для асинхронного запроса
         return JSONResponse(
             content={
                 "success": True,

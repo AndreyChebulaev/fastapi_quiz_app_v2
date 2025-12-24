@@ -55,6 +55,9 @@
         <button type="submit" style="background: linear-gradient(135deg, #27ae60, #219a52);">
             💾 Сохранить изменения
         </button>
+        <button type="button" onclick="location.href='/select'" style="background: linear-gradient(135deg, #7f8c8d, #6c7a89);">
+            🏠 Вернуться на главную
+        </button>
     </div>
 </form>
 
@@ -164,26 +167,47 @@ function removeAnswer(button) {
 
 // Подготовка данных перед отправкой формы
 document.getElementById('main-form').addEventListener('submit', function(e) {
+    e.preventDefault(); // Предотвращаем стандартную отправку формы
+    
     // Собираем все ответы в строки с правильным форматированием кавычек
     const questionBlocks = document.querySelectorAll('.question-block');
     
-    // Очищаем старые скрытые поля
-    const oldHiddenInputs = this.querySelectorAll('input[name="answers"]');
-    oldHiddenInputs.forEach(input => input.remove());
+    // Создаем FormData для отправки
+    const formData = new FormData();
+    formData.append('filename', document.querySelector('input[name="filename"]').value);
+    formData.append('original_data', document.querySelector('input[name="original_data"]').value);
     
     questionBlocks.forEach((block, index) => {
+        const questionInput = block.querySelector('input[name="questions"]');
+        const questionText = questionInput.value;
+        
         const answerInputs = block.querySelectorAll('.answer-input');
         const answersArray = Array.from(answerInputs).map(input => input.value.trim()).filter(val => val);
         
         // Правильно форматируем ответы с кавычками
         const answersString = answersArray.map(answer => `"${answer}"`).join(',');
         
-        // Создаем скрытое поле для ответов
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'answers';
-        hiddenInput.value = answersString;
-        this.appendChild(hiddenInput);
+        formData.append('questions', questionText);
+        formData.append('answers', JSON.stringify(answersArray));
+    });
+    
+    // Отправляем данные через fetch
+    fetch('/main2/save_edit', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Перенаправляем на страницу выбора файлов
+            window.location.href = '/select';
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при сохранении: ' + error.message);
     });
 });
 </script>
