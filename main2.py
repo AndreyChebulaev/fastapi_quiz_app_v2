@@ -18,7 +18,7 @@ import ast
 app = FastAPI(title="Excel Questions Editor")
 
 # Создаем директории
-Path("uploads").mkdir(exist_ok=True)
+Path("uploaded_filesd_filesd_files").mkdir(exist_ok=True)
 
 def get_user_from_session(request: Request) -> str:
     """Получает пользователя из сессии (совместимо с основным приложением)"""
@@ -83,7 +83,7 @@ def get_user_permissions(user_type: str):
     return permissions
 
 # Создаем директории
-Path("uploads").mkdir(exist_ok=True)
+Path("uploaded_filesd_filesd_files").mkdir(exist_ok=True)
 
 # Настройка шаблонов
 templates = Jinja2Templates(directory="templates")
@@ -131,7 +131,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Только Excel файлы разрешены")
     
     # Сохраняем файл
-    file_path = f"uploads/{file.filename}"
+    file_path = f"uploaded_filesd_filesd_files/{file.filename}"
     with open(file_path, "wb") as f:
         f.write(await file.read())
     
@@ -190,7 +190,7 @@ async def save_file(
         if is_new_file:
             # СОЗДАНИЕ НОВОГО ФАЙЛА - БЕЗ ЗАГОЛОВКОВ
             output_filename = f"new_questions.xlsx"
-            output_path = f"uploads/{output_filename}"
+            output_path = f"uploaded_files/{output_filename}"
             
             # Подготавливаем данные для нового файла
             new_data = []
@@ -222,7 +222,7 @@ async def save_file(
             # РЕДАКТИРОВАНИЕ СУЩЕСТВУЮЩЕГО ФАЙЛА
             # Полностью заменяем содержимое файла
             output_filename = f"edited_{filename}"
-            output_path = f"uploads/{output_filename}"
+            output_path = f"uploaded_filesd_filesd_files/{output_filename}"
             
             # Создаем новые данные
             new_data = []
@@ -273,7 +273,7 @@ async def download_file(filename: str, request: Request = None):
         if not user_permissions['can_edit_tests']:
             raise HTTPException(status_code=403, detail="У вас нет прав для скачивания файлов")
     
-    file_path = f"uploads/{filename}"
+    file_path = f"uploaded_filesd_filesd_files/{filename}"
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Файл не найден")
     
@@ -326,7 +326,7 @@ async def edit(filename: str, request: Request):
         return RedirectResponse(url="/select", status_code=303)
     
     # Путь к директории с файлами
-    FILES_DIR = Path("uploaded_files")  # или ваш путь
+    FILES_DIR = Path("uploaded_filesd_filesd_files")  # или ваш путь
     
     file_path = FILES_DIR / filename
     
@@ -470,7 +470,7 @@ async def save_edit(
     df = pd.DataFrame(data, columns=["Вопрос", "Ответы"])
     
     # Сохраняем в Excel файл
-    FILES_DIR = Path("uploaded_files")
+    FILES_DIR = Path("uploaded_filesd_filesd_files")
     file_path = FILES_DIR / filename
     
     try:
