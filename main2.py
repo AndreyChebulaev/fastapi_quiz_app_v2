@@ -220,9 +220,9 @@ async def save_file(
             
         else:
             # РЕДАКТИРОВАНИЕ СУЩЕСТВУЮЩЕГО ФАЙЛА
-            # Полностью заменяем содержимое файла
-            output_filename = f"edited_{filename}"
-            output_path = f"uploaded_filesd_filesd_files/{output_filename}"
+            # Полностью заменяем содержимое файла с тем же именем
+            output_filename = filename
+            output_path = f"uploaded_files/{output_filename}"
             
             # Создаем новые данные
             new_data = []
@@ -273,7 +273,7 @@ async def download_file(filename: str, request: Request = None):
         if not user_permissions['can_edit_tests']:
             raise HTTPException(status_code=403, detail="У вас нет прав для скачивания файлов")
     
-    file_path = f"uploaded_filesd_filesd_files/{filename}"
+    file_path = f"uploaded_files/{filename}"
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Файл не найден")
     
@@ -326,7 +326,7 @@ async def edit(filename: str, request: Request):
         return RedirectResponse(url="/select", status_code=303)
     
     # Путь к директории с файлами
-    FILES_DIR = Path("uploaded_filesd_filesd_files")  # или ваш путь
+    FILES_DIR = Path("uploaded_files")
     
     file_path = FILES_DIR / filename
     
@@ -353,12 +353,11 @@ async def edit(filename: str, request: Request):
             if len(row) > 1 and pd.notna(row.iloc[1]):
                 answers_str = str(row.iloc[1])
                 try:
-                    # Пытаемся распарсить как список в кавычках
-                    # Пример: "ответ1","ответ2","ответ3"
-                    answers = parse_answers_string(answers_str)
+                    # Используем функцию из utils
+                    answers = parse_answers(answers_str)
                 except:
                     # Если не получается, разбиваем по запятым
-                    answers = [a.strip().strip('"').strip("'") for a in answers_str.split(',')]
+                    answers = [a.strip().strip('"').strip("'") for a in answers_str.split(',') if a.strip()]
             
             questions_data.append({
                 "question": question_text,
@@ -469,8 +468,8 @@ async def save_edit(
     # Создаем DataFrame
     df = pd.DataFrame(data, columns=["Вопрос", "Ответы"])
     
-    # Сохраняем в Excel файл
-    FILES_DIR = Path("uploaded_filesd_filesd_files")
+    # Сохраняем в Excel файл в правильной директории
+    FILES_DIR = Path("uploaded_files")
     file_path = FILES_DIR / filename
     
     try:
