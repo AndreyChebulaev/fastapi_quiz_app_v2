@@ -8,12 +8,14 @@ from sentence_transformers import SentenceTransformer, util
 import os
 import re
 import torch
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import glob
 import sqlite3
 import hashlib
 import secrets
 from fastapi.middleware.cors import CORSMiddleware
+import json
+import time
 
 from datetime import datetime
 import main2
@@ -30,7 +32,53 @@ app.mount("/main2", main2.app)
 # Глобальные данные
 MODEL_NAME = 'all-MiniLM-L6-v2'
 THRESHOLD = 0.833
-model = SentenceTransformer(MODEL_NAME)
+
+# region agent log helper
+DEBUG_LOG_PATH = r"c:\Users\Andrey\Desktop\fastapi_quiz_app_v2\.cursor\debug.log"
+
+
+def debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: Optional[Dict[str, Any]] = None) -> None:
+    """Append a single NDJSON debug log line for this debug session."""
+    try:
+        payload = {
+            "id": f"log_{int(time.time() * 1000)}",
+            "timestamp": int(time.time() * 1000),
+            "runId": run_id,
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data or {},
+        }
+        with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:
+        # Инструментация не должна ломать приложение
+        pass
+
+
+# endregion
+
+# region agent log H1 – SentenceTransformer loading
+try:
+    model = SentenceTransformer(MODEL_NAME)
+    debug_log(
+        run_id="post_fix_1",
+        hypothesis_id="H1",
+        location="main.py:33",
+        message="SentenceTransformer model loaded successfully",
+        data={"model_name": MODEL_NAME},
+    )
+except Exception as e:
+    # Подтверждённая проблема: нет доступа к huggingface.co, не роняем всё приложение
+    model = None
+    debug_log(
+        run_id="post_fix_1",
+        hypothesis_id="H1",
+        location="main.py:33",
+        message="SentenceTransformer model load failed (graceful fallback)",
+        data={"model_name": MODEL_NAME, "error": str(e)},
+    )
+# endregion
 questions = []
 reference_answers = []
 user_answers = []
@@ -310,6 +358,28 @@ async def load_quiz_data(request: Request, file_path: str):
     global questions, reference_answers, user_answers, all_embeddings
     
     try:
+        # region agent log H2 – загрузка теста и наличие модели
+        debug_log(
+            run_id="post_fix_1",
+            hypothesis_id="H2",
+            location="main.py:312",
+            message="load_quiz_data called",
+            data={"file_path": file_path, "model_is_none": model is None},
+        )
+        # endregion
+
+        if model is None:
+            # Модель не загружена (например, нет интернета для HuggingFace) — даём понятную ошибку пользователю
+            files = get_uploaded_files()
+            context = get_template_context(request)
+            context.update({
+                "request": request,
+                "files": files,
+                "error": "Модель проверки ответов не загружена (нет доступа к HuggingFace). "
+                         "Обратитесь к администратору: требуется интернет или локальный кэш модели."
+            })
+            return templates.TemplateResponse("select.html", context)
+
         df = pd.read_excel(file_path, engine='openpyxl', usecols=[0,1], header=None, names=['q','a'])
         
         questions = df['q'].astype(str).tolist()

@@ -1,71 +1,74 @@
 {% extends "base.html" %}
 {% block title %}Quiz System - Select Test File{% endblock %}
+{% block container_class %}narrow-container{% endblock %}
 {% block content %}
+    <div class="registration-form">
         <div class="header">
             <h1>📝 Quiz System</h1>
             <h3>Выберите тест для прохождения</h3>
         </div>
     
-    {% if message %}
-    <div class="message success">
-        ✅ {{ message }}
-    </div>
-    {% endif %}
-    
-    {% if error %}
-    <div class="message error">
-        ❌ {{ error }}
-    </div>
-    {% endif %}
-
-    <!-- Форма загрузки файла (unused)-->
-    {% if false %}
-    <div class="upload-section">
-        <h3>📤 Загрузить новый тест</h3>
-        <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
-            <div class="file-upload-wrapper">
-                <label for="file" class="file-upload-label">
-                    📎 Выберите Excel файл (.xlsx)
-                </label>
-                <input type="file" id="file" name="file" accept=".xlsx" required style="display: none;">
-            </div>
-            <button type="submit" class="btn btn-upload">Загрузить файл</button>
-        </form>
-    </div>
-    {% endif %}
-
-    <div class="users-section">
-        <h3>Список тестов ({{ files|length }})</h3>
-        <div class="users-list">
-            {% if files %}
-                {% for file in files %}
-                <div class="user-item">
-                    <div class="user-info">
-                        <div class="user-name-actions">
-                            <div class="user-name">{{ file.name }}</div>
+        {% if message %}
+        <div class="message success">
+            ✅ {{ message }}
+        </div>
+        {% endif %}
+        
+        {% if error %}
+        <div class="message error">
+            ❌ {{ error }}
+        </div>
+        {% endif %}
+        
+        <!-- Форма загрузки файла (unused)-->
+        {% if false %}
+        <div class="upload-section">
+            <h3>📤 Загрузить новый тест</h3>
+            <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
+                <div class="file-upload-wrapper">
+                    <label for="file" class="file-upload-label">
+                        📎 Выберите Excel файл (.xlsx)
+                    </label>
+                    <input type="file" id="file" name="file" accept=".xlsx" required style="display: none;">
+                </div>
+                <button type="submit" class="btn btn-upload">Загрузить файл</button>
+            </form>
+        </div>
+        {% endif %}
+        
+        <div class="users-section">
+            <h3>Список тестов ({{ files|length }})</h3>
+            <div class="users-list">
+                {% if files %}
+                    {% for file in files %}
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-name-actions">
+                                <div class="user-name">{{ file.name }}</div>
+                            </div>
+                        </div>
+                        <div class="user-actions">
+                            <form action="/select" method="post" style="display: inline;">
+                                <input type="hidden" name="filename" value="{{ file.name }}">
+                                <button type="submit" class="btn btn-primary">Начать тест</button>
+                            </form>
+                            
+                            {% if user_permissions.can_delete_files %}
+                            <button onclick="editFile('{{ file.name }}')" class="btn btn-edit">Изменить</button>
+                            {% endif %}
+                            {% if user_permissions.can_delete_files %}
+                            <button onclick="deleteFile('{{ file.name }}')" class="btn btn-delete">Удалить</button>
+                            {% endif %}
                         </div>
                     </div>
-                    <div class="user-actions">
-                        <form action="/select" method="post" style="display: inline;">
-                            <input type="hidden" name="filename" value="{{ file.name }}">
-                            <button type="submit" class="btn btn-primary">Начать тест</button>
-                        </form>
-                        
-                        {% if user_permissions.can_delete_files %}
-                        <button onclick="editFile('{{ file.name }}')" class="btn btn-edit">Изменить</button>
-                        {% endif %}
-                        {% if user_permissions.can_delete_files %}
-                        <button onclick="deleteFile('{{ file.name }}')" class="btn btn-delete">Удалить</button>
-                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="no-users">
+                        <h3>Нет доступных тестов</h3>
+                        <p>Обратитесь к администратору для загрузки тестов</p>
                     </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="no-users">
-                    <h3>Нет доступных тестов</h3>
-                    <p>Обратитесь к администратору для загрузки тестов</p>
-                </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </div>
     </div>
 
