@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% block container_class %}new-test-edit-page{% endblock %}
 
 {% block content %}
 <h2>Редактирование вопросов и ответов</h2>
-<form action="/main2/save" method="post" id="main-form">
+<form action="/main2/save" method="post" id="main-form" class="{% if filename == 'new_file.xlsx' %}create-test-form{% endif %}">
     <input type="hidden" name="filename" value="{{ filename }}">
     <input type="hidden" name="original_data" value="{{ original_data }}">
     

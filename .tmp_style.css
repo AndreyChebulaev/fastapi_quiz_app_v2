@@ -1,4 +1,4 @@
-* {
+﻿* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -431,21 +431,6 @@ label {
     border-top: 1px solid #bdc3c7;
 }
 
-/* На странице /v2/users: "Сбросить" и "Редактировать" в одном стиле */
-.filters .filter-actions .btn.btn-secondary,
-.users-list .user-actions .btn.btn-edit {
-    background: linear-gradient(135deg, #c9822b, #ad6f22);
-    color: #ffffff;
-    box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35);
-}
-
-.filters .filter-actions .btn.btn-secondary:hover,
-.users-list .user-actions .btn.btn-edit:hover {
-    background: linear-gradient(135deg, #ad6f22, #955d1b);
-    box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4);
-    transform: translateY(-1px);
-}
-
 .search-input {
     min-width: 100%;
 }
@@ -771,14 +756,14 @@ label {
 }
 
 .prev-button {
-    background: linear-gradient(135deg, #4b637a, #34495e);
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
     color: white;
-    box-shadow: 0 2px 4px rgba(52, 73, 94, 0.35);
+    box-shadow: 0 2px 4px rgba(149, 165, 166, 0.3);
 }
 
 .prev-button:hover {
-    background: linear-gradient(135deg, #40586f, #2c3e50);
-    box-shadow: 0 4px 8px rgba(44, 62, 80, 0.4);
+    background: linear-gradient(135deg, #7f8c8d, #6c7b7d);
+    box-shadow: 0 4px 8px rgba(149, 165, 166, 0.4);
     transform: translateY(-1px);
 }
 
@@ -1237,3 +1222,4 @@ label {
         font-size: 1.8rem;
     }
 }
+

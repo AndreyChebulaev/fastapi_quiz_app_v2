@@ -1,14 +1,42 @@
 {% extends "base.html" %}
 
+{% block head_extra %}
+<style>
+    .welcome-section .action-buttons a[href="/v2/upload"] {
+        background: linear-gradient(135deg, #27ae60, #219a52) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(39, 174, 96, 0.3) !important;
+    }
+
+    .welcome-section .action-buttons a[href="/v2/upload"]:hover {
+        background: linear-gradient(135deg, #219a52, #1e8449) !important;
+        box-shadow: 0 4px 8px rgba(39, 174, 96, 0.4) !important;
+        transform: translateY(-1px);
+    }
+
+    .welcome-section .action-buttons a[href="/v2/users"] {
+        background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+    }
+
+    .welcome-section .action-buttons a[href="/v2/users"]:hover {
+        background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+        box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="welcome-section">
         <h2>Система регистрации пользователей</h2>
-        
+
         <div class="action-buttons">
             <a href="/v2/register" class="btn btn-primary">Зарегистрировать пользователя</a>
-            <a href="/v2/upload" class="btn btn-primary">Загрузить из файла</a>
-            <a href="/v2/users" class="btn btn-secondary">Просмотреть список</a>
+            <a href="/v2/upload" class="btn btn-save">Загрузить из файла</a>
+            <a href="/v2/users" class="btn btn-cancel">Просмотреть список</a>
         </div>
 
         <div class="quick-stats">

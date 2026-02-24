@@ -1,5 +1,33 @@
 {% extends "base.html" %}
 
+{% block head_extra %}
+<style>
+    .edit-form .btn.btn-cancel {
+        background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+    }
+
+    .edit-form .btn.btn-cancel:hover {
+        background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+        box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        transform: translateY(-1px);
+    }
+
+    .edit-form .password-field .btn.btn-primary {
+        background: linear-gradient(135deg, #3498db, #2980b9) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3) !important;
+    }
+
+    .edit-form .password-field .btn.btn-primary:hover {
+        background: linear-gradient(135deg, #2980b9, #2573a7) !important;
+        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4) !important;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h2>Редактирование пользователя</h2>
@@ -39,7 +67,7 @@
             <div class="password-field">
                 <input type="password" id="password" name="password" value="{{ user.password }}" required class="form-input">
                 <button type="button" class="btn-password-toggle" onclick="togglePassword()">👁️</button>
-                <button type="button" class="btn-regenerate-password" onclick="regeneratePassword({{ user.id }})">Сгенерировать новый</button>
+                <button type="button" class="btn btn-primary" onclick="regeneratePassword({{ user.id }})">Сгенерировать новый</button>
             </div>
         </div>
 

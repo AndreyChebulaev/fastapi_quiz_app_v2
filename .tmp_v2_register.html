@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Quiz System{% endblock %}</title>
+    <title>Quiz System</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .navbar {
@@ -125,7 +125,7 @@
     </style>
     
     <script>
-        // РћР±СЂР°Р±РѕС‚РєР° РѕС‚РєСЂС‹С‚РёСЏ/Р·Р°РєСЂС‹С‚РёСЏ РІС‹РїР°РґР°СЋС‰РµРіРѕ РјРµРЅСЋ РїСЂРѕС„РёР»СЏ
+        // Обработка открытия/закрытия выпадающего меню профиля
         document.addEventListener('DOMContentLoaded', function() {
             const profileBtn = document.getElementById('profileBtn');
             const profileDropdown = document.getElementById('profileDropdown');
@@ -136,7 +136,7 @@
                     profileDropdown.classList.toggle('show');
                 });
                 
-                // Р—Р°РєСЂС‹С‚РёРµ РІС‹РїР°РґР°СЋС‰РµРіРѕ РјРµРЅСЋ РїСЂРё РєР»РёРєРµ РІРЅРµ РµРіРѕ РѕР±Р»Р°СЃС‚Рё
+                // Закрытие выпадающего меню при клике вне его области
                 document.addEventListener('click', function(e) {
                     if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
                         profileDropdown.classList.remove('show');
@@ -145,7 +145,6 @@
             }
         });
     </script>
-    {% block head_extra %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
@@ -156,29 +155,69 @@
                 <li><a href="/main2" class="nav-link">Новый тест</a></li>
                 <li><a href="/v2" class="nav-link">Регистрация пользователей</a></li>
             </ul>
-            {% if user_info %}
-            <div class="user-profile-dropdown">
-                <button class="user-profile-btn" id="profileBtn">
-                    👤 {{ user_info.full_name }}
-                </button>
-                <div class="dropdown-content" id="profileDropdown">
-                    <div class="user-details">
-                        <p><strong>{{ user_info.full_name }}</strong></p>
-                        <p>Группа: {{ user_info.group_name }}</p>
-                        <p>Роль: {{ user_info.user_type }}</p>
-                        <p>Логин: {{ user_info.login }}</p>
-                    </div>
-                    <hr>
-                    <a href="/logout" class="logout-link">🚪 Выйти</a>
-                </div>
-            </div>
-            {% endif %}
+            
         </div>
     </nav>
     
     <main class="main-content">
-        {% block content %}{% endblock %}
+        
+<div class="container">
+    <h2>Регистрация нового пользователя</h2>
+    
+    
+    
+    <form method="post" action="/v2/register" class="registration-form">
+        <div class="form-group">
+            <label for="user_type">Тип пользователя:</label>
+            <select id="user_type" name="user_type" required class="form-select">
+                <option value="">Выберите тип пользователя</option>
+                <option value="teacher">Преподаватель</option>
+                <option value="student">Студент</option>
+            </select>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="last_name">Фамилия:</label>
+                <input type="text" id="last_name" name="last_name" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="first_name">Имя:</label>
+                <input type="text" id="first_name" name="first_name" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="middle_name">Отчество:</label>
+                <input type="text" id="middle_name" name="middle_name" class="form-input">
+            </div>
+        </div>
+        
+        <div class="form-group" id="group-field" style="display: none;">
+            <label for="group_name">Группа:</label>
+            <input type="text" id="group_name" name="group_name" class="form-input">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зарегистрировать</button>
+            <a href="/v2" class="btn btn-cancel">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('user_type').addEventListener('change', function() {
+    const groupField = document.getElementById('group-field');
+    if (this.value === 'student') {
+        groupField.style.display = 'block';
+        document.getElementById('group_name').required = true;
+    } else {
+        groupField.style.display = 'none';
+        document.getElementById('group_name').required = false;
+    }
+});
+</script>
+
     </main>
 </body>
 </html>
-

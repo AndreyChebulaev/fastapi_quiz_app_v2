@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+﻿﻿﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Quiz System{% endblock %}</title>
+    <title>Quiz System</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .navbar {
@@ -145,7 +145,7 @@
             }
         });
     </script>
-    {% block head_extra %}{% endblock %}
+    
 </head>
 <body>
     <nav class="navbar">
@@ -156,28 +156,73 @@
                 <li><a href="/main2" class="nav-link">Новый тест</a></li>
                 <li><a href="/v2" class="nav-link">Регистрация пользователей</a></li>
             </ul>
-            {% if user_info %}
-            <div class="user-profile-dropdown">
-                <button class="user-profile-btn" id="profileBtn">
-                    👤 {{ user_info.full_name }}
-                </button>
-                <div class="dropdown-content" id="profileDropdown">
-                    <div class="user-details">
-                        <p><strong>{{ user_info.full_name }}</strong></p>
-                        <p>Группа: {{ user_info.group_name }}</p>
-                        <p>Роль: {{ user_info.user_type }}</p>
-                        <p>Логин: {{ user_info.login }}</p>
-                    </div>
-                    <hr>
-                    <a href="/logout" class="logout-link">🚪 Выйти</a>
-                </div>
-            </div>
-            {% endif %}
+            
         </div>
     </nav>
     
     <main class="main-content">
-        {% block content %}{% endblock %}
+        
+<div class="container">
+    <div class="upload-section">
+        <h2>Р—Р°РіСЂСѓР·РєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РёР· С„Р°Р№Р»Р°</h2>
+        
+        <div class="upload-info">
+            <div class="info-card">
+                <h3>рџ“‹ Р¤РѕСЂРјР°С‚ С„Р°Р№Р»Р°</h3>
+                <p>РџРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ CSV Рё Excel С„Р°Р№Р»С‹ СЃРѕ СЃР»РµРґСѓСЋС‰РёРјРё РєРѕР»РѕРЅРєР°РјРё:</p>
+                <ul>
+                    <li><strong>РћР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ:</strong> last_name, first_name, user_type</li>
+                    <li><strong>РћРїС†РёРѕРЅР°Р»СЊРЅС‹Рµ:</strong> middle_name, group_name</li>
+                </ul>
+            </div>
+            
+            <div class="info-card">
+                <h3>рџ‘Ґ РўРёРїС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№</h3>
+                <ul>
+                    <li><code>teacher</code> - РџСЂРµРїРѕРґР°РІР°С‚РµР»СЊ</li>
+                    <li><code>student</code> - РЎС‚СѓРґРµРЅС‚ (С‚СЂРµР±СѓРµС‚СЃСЏ group_name)</li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="post" action="/v2/upload" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file" class="file-label">
+                    <span class="file-button">Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р»</span>
+                    <span class="file-name" id="file-name">Р¤Р°Р№Р» РЅРµ РІС‹Р±СЂР°РЅ</span>
+                </label>
+                <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required class="file-input">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-upload">Р—Р°РіСЂСѓР·РёС‚СЊ С„Р°Р№Р»</button>
+                <a href="/v2" class="btn btn-cancel">РћС‚РјРµРЅР°</a>
+            </div>
+        </form>
+
+        <div class="example-section">
+            <h3>РџСЂРёРјРµСЂ CSV С„Р°Р№Р»Р°:</h3>
+            <div class="code-example">
+                <pre><code>last_name,first_name,middle_name,user_type,group_name
+РРІР°РЅРѕРІ,РРІР°РЅ,РРІР°РЅРѕРІРёС‡,teacher,
+РџРµС‚СЂРѕРІР°,РњР°СЂРёСЏ,РЎРµСЂРіРµРµРІРЅР°,student,РРў-21
+РЎРёРґРѕСЂРѕРІ,РђР»РµРєСЃРµР№,,student,Р¤РР—-22</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const fileName = document.getElementById('file-name');
+    if (this.files.length > 0) {
+        fileName.textContent = this.files[0].name;
+    } else {
+        fileName.textContent = 'Р¤Р°Р№Р» РЅРµ РІС‹Р±СЂР°РЅ';
+    }
+});
+</script>
+
     </main>
 </body>
 </html>

@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 
+{% block head_extra %}
+<style>
+    .filters .filter-actions .btn.btn-secondary,
+    .users-list .user-actions .btn.btn-edit {
+        background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+    }
+
+    .filters .filter-actions .btn.btn-secondary:hover,
+    .users-list .user-actions .btn.btn-edit:hover {
+        background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+        box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h2>Список пользователей</h2>

@@ -1,10 +1,26 @@
 {% extends "base.html" %}
 
+{% block head_extra %}
+<style>
+    .upload-form .btn.btn-cancel {
+        background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+    }
+
+    .upload-form .btn.btn-cancel:hover {
+        background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+        box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="upload-section">
         <h2>Загрузка пользователей из файла</h2>
-        
+
         <div class="upload-info">
             <div class="info-card">
                 <h3>📋 Формат файла</h3>
@@ -14,7 +30,7 @@
                     <li><strong>Опциональные:</strong> middle_name, group_name</li>
                 </ul>
             </div>
-            
+
             <div class="info-card">
                 <h3>👥 Типы пользователей</h3>
                 <ul>
@@ -32,10 +48,10 @@
                 </label>
                 <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required class="file-input">
             </div>
-            
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary btn-upload">Загрузить файл</button>
-                <a href="/v2" class="btn btn-secondary">Отмена</a>
+                <a href="/v2" class="btn btn-cancel">Отмена</a>
             </div>
         </form>
 
@@ -52,7 +68,7 @@
 </div>
 
 <script>
-document.getElementById('file').addEventListener('change', function(e) {
+document.getElementById('file').addEventListener('change', function() {
     const fileName = document.getElementById('file-name');
     if (this.files.length > 0) {
         fileName.textContent = this.files[0].name;

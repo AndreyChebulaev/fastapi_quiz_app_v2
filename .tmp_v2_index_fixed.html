@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Quiz System{% endblock %}</title>
+    <title>Quiz System</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .navbar {
@@ -145,7 +145,33 @@
             }
         });
     </script>
-    {% block head_extra %}{% endblock %}
+    
+<style>
+    .welcome-section .action-buttons a[href="/v2/upload"] {
+        background: linear-gradient(135deg, #27ae60, #219a52) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(39, 174, 96, 0.3) !important;
+    }
+
+    .welcome-section .action-buttons a[href="/v2/upload"]:hover {
+        background: linear-gradient(135deg, #219a52, #1e8449) !important;
+        box-shadow: 0 4px 8px rgba(39, 174, 96, 0.4) !important;
+        transform: translateY(-1px);
+    }
+
+    .welcome-section .action-buttons a[href="/v2/users"] {
+        background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+    }
+
+    .welcome-section .action-buttons a[href="/v2/users"]:hover {
+        background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+        box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        transform: translateY(-1px);
+    }
+</style>
+
 </head>
 <body>
     <nav class="navbar">
@@ -156,28 +182,41 @@
                 <li><a href="/main2" class="nav-link">Новый тест</a></li>
                 <li><a href="/v2" class="nav-link">Регистрация пользователей</a></li>
             </ul>
-            {% if user_info %}
-            <div class="user-profile-dropdown">
-                <button class="user-profile-btn" id="profileBtn">
-                    👤 {{ user_info.full_name }}
-                </button>
-                <div class="dropdown-content" id="profileDropdown">
-                    <div class="user-details">
-                        <p><strong>{{ user_info.full_name }}</strong></p>
-                        <p>Группа: {{ user_info.group_name }}</p>
-                        <p>Роль: {{ user_info.user_type }}</p>
-                        <p>Логин: {{ user_info.login }}</p>
-                    </div>
-                    <hr>
-                    <a href="/logout" class="logout-link">🚪 Выйти</a>
-                </div>
-            </div>
-            {% endif %}
+            
         </div>
     </nav>
     
     <main class="main-content">
-        {% block content %}{% endblock %}
+        
+<div class="container">
+    <div class="welcome-section">
+        <h2>Система регистрации пользователей</h2>
+
+        <div class="action-buttons">
+            <a href="/v2/register" class="btn btn-primary">Зарегистрировать пользователя</a>
+            <a href="/v2/upload" class="btn btn-save">Загрузить из файла</a>
+            <a href="/v2/users" class="btn btn-cancel">Просмотреть список</a>
+        </div>
+
+        <div class="quick-stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>Быстрая регистрация</h3>
+                    <p>Добавьте пользователей вручную через удобную форму</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Массовая загрузка</h3>
+                    <p>Импортируйте данные из CSV или Excel файлов</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Управление доступом</h3>
+                    <p>Разделение на преподавателей и студентов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
     </main>
 </body>
 </html>

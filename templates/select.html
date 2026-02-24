@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Quiz System - Select Test File{% endblock %}
-{% block container_class %}narrow-container{% endblock %}
+{% block container_class %}narrow-container tests-list-page{% endblock %}
 {% block content %}
-    <div class="registration-form">
+    <div class="registration-form tests-list-form">
         <div class="header">
             <h1>📝 Quiz System</h1>
             <h3>Выберите тест для прохождения</h3>
@@ -44,7 +44,7 @@
                     <div class="user-item">
                         <div class="user-info">
                             <div class="user-name-actions">
-                                <div class="user-name">{{ file.name }}</div>
+                                <div class="user-name">{{ file.name | replace('.xlsx', '') | replace('.xls', '') }}</div>
                             </div>
                         </div>
                         <div class="user-actions">

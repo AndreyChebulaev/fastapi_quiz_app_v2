@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 
+{% block head_extra %}
+<style>
+    .form-actions .btn.btn-cancel {
+        background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+    }
+
+    .form-actions .btn.btn-cancel:hover {
+        background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+        box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h2>Регистрация нового пользователя</h2>
@@ -44,7 +60,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Зарегистрировать</button>
-            <a href="/v2" class="btn btn-secondary">Отмена</a>
+            <a href="/v2" class="btn btn-cancel">Отмена</a>
         </div>
     </form>
 </div>

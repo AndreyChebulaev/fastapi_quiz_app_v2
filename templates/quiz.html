@@ -1,24 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Вопрос {{ idx + 1 }} из {{ questions|length }}{% endblock %}
+{% block container_class %}quiz-page{% endblock %}
 {% block content %}
-<div class="container">
     <div class="progress">
         Вопрос {{ idx + 1 }} из {{ questions|length }}
     </div>
-    
+
     <div class="question-container">
         <h2>{{ question }}</h2>
     </div>
-    
+
     <form id="answerForm">
         <input type="hidden" name="idx" value="{{ idx }}">
-        <input type="text" id="user_answer" name="user_answer" 
-               value="{{ current_answer }}" 
+        <input type="text" id="user_answer" name="user_answer"
+               value="{{ current_answer }}"
                required autofocus
-               placeholder="Вводите свой ответ здесь...">
-        
+               placeholder="Введите свой ответ здесь...">
     </form>
-    
+
     <div class="navigation-buttons">
         {% if idx > 0 %}
         <button type="button" onclick="goToPrevious()" class="nav-button prev-button">
@@ -27,7 +26,7 @@
         {% else %}
         <div></div>
         {% endif %}
-        
+
         {% if idx + 1 == questions|length %}
         <button type="button" onclick="finishTest()" class="nav-button finish-button">
             Завершить тест
@@ -45,17 +44,15 @@
             // Сохраняем текущий ответ
             const answerInput = document.getElementById('user_answer');
             const currentAnswer = answerInput.value.trim();
-            
-            
 
             const form = document.getElementById('answerForm');
             const formData = new FormData(form);
-            
+
             const saveResponse = await fetch('/answer', {
                 method: 'POST',
                 body: formData
             });
-            
+
             if (!saveResponse.ok) {
                 throw new Error('Ошибка сохранения ответа');
             }
@@ -64,12 +61,12 @@
             const navigateForm = new FormData();
             navigateForm.append('current_idx', '{{ idx }}');
             navigateForm.append('direction', 'next');
-            
+
             const response = await fetch('/navigate', {
                 method: 'POST',
                 body: navigateForm
             });
-            
+
             if (response.redirected) {
                 window.location.href = response.url;
             }
@@ -84,7 +81,7 @@
             // 1. Сохраняем текущий ответ
             const answerInput = document.getElementById('user_answer');
             const currentAnswer = answerInput.value.trim();
-            
+
             if (!currentAnswer) {
                 alert('Пожалуйста, ответьте на текущий вопрос перед завершением.');
                 answerInput.focus();
@@ -94,12 +91,12 @@
             // 2. Отправляем текущий ответ
             const form = document.getElementById('answerForm');
             const formData = new FormData(form);
-            
+
             const saveResponse = await fetch('/answer', {
                 method: 'POST',
                 body: formData
             });
-            
+
             if (!saveResponse.ok) {
                 throw new Error('Ошибка сохранения ответа');
             }
@@ -112,11 +109,11 @@
                 },
                 body: new URLSearchParams()
             });
-            
+
             if (!checkResponse.ok) {
                 throw new Error('Ошибка проверки завершения');
             }
-            
+
             const result = await checkResponse.json();
 
             // 4. Обрабатываем результат
@@ -128,12 +125,12 @@
                     `Пропущены: ${result.unanswered.join(', ')}.\n\n` +
                     'Перейти к первому пропущенному вопросу?'
                 );
-                
+
                 if (goToUnanswered) {
                     window.location.href = `/quiz?idx=${result.unanswered[0] - 1}`;
                 }
             }
-            
+
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Произошла ошибка: ' + error.message);
@@ -144,21 +141,21 @@
         try {
             const form = document.getElementById('answerForm');
             const formData = new FormData(form);
-            
+
             await fetch('/answer', {
                 method: 'POST',
                 body: formData
             });
-            
+
             const navigateForm = new FormData();
             navigateForm.append('current_idx', '{{ idx }}');
             navigateForm.append('direction', direction);
-            
+
             const response = await fetch('/navigate', {
                 method: 'POST',
                 body: navigateForm
             });
-            
+
             if (response.redirected) {
                 window.location.href = response.url;
             }

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block container_class %}new-test-container new-test-page{% endblock %}
 
 {% block content %}
 <div class="home-container">
@@ -7,9 +8,9 @@
         Выберите действие для работы с вопросами и ответами
     </p>
     
-    <div class="home-actions" style="margin-top: 20px; margin-bottom: 20px;">
+    <div class="home-actions">
         <!-- Карточка загрузки файла -->
-        <div class="action-card" style="min-width: 280px; max-width: 320px;">
+        <div class="action-card">
             <h3>📤 Загрузить файл</h3>
             <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
                 Загрузите существующий Excel файл для редактирования
@@ -30,24 +31,24 @@
                         Файл не выбран
                     </div>
                 </div>
-                <button type="submit" class="home-btn" style="padding: 12px 20px; font-size: 14px; min-width: 180px;">📝 Редактировать файл</button>
+                <button type="submit" class="home-btn edit-btn">📝 Редактировать файл</button>
             </form>
         </div>
         
         <!-- Карточка создания нового файла -->
-        <div class="action-card" style="min-width: 280px; max-width: 320px;">
+        <div class="action-card">
             <h3>🆕 Создать новый</h3>
             <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
                 Создайте новый файл с вопросами и ответами с нуля
             </p>
             <div style="font-size: 36px; margin: 15px 0;">✨</div>
             <a href="/main2/create-new" style="text-decoration: none;">
-                <button type="button" class="home-btn create" style="padding: 12px 20px; font-size: 14px; min-width: 180px;">Создать новый файл</button>
+                <button type="button" class="home-btn create">Создать новый файл</button>
             </a>
         </div>
     </div>
     
-    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+    <div class="new-test-info">
         <h3 style="color: #2c3e50; margin-top: 0; text-align: center; font-size: 16px;">📋 Поддерживаемый формат файла</h3>
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
             <div style="text-align: center;">

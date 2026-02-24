@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Excel Questions Editor{% endblock %}</title>
     <!-- Добавляем подключение общих стилей для навигации -->
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=20260220-quiz-prev-btn-1">
     <style>
         /* Базовый сброс - как во втором файле */
         * {
@@ -239,6 +239,45 @@
         .btn-remove-question:hover { 
             background: #c0392b; 
         }
+
+        /* Явная настройка кнопки "Изменить" на странице /select */
+        .tests-list-page .user-actions .btn.btn-edit {
+            background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+        }
+
+        .tests-list-page .user-actions .btn.btn-edit:hover {
+            background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+            box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+            transform: translateY(-1px);
+        }
+
+        /* Страница /select: чуть более компактная белая рамка */
+        .container.tests-list-page {
+            max-width: 1040px;
+            margin: 2rem auto;
+        }
+
+        /* Страница /select: синяя полоска слева у каждого теста */
+        .tests-list-page .users-list .user-item {
+            border-left: 4px solid #3498db;
+            padding-left: 1rem;
+        }
+
+        button[type="reset"],
+        .btn-cancel {
+            background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+        }
+
+        button[type="reset"]:hover,
+        .btn-cancel:hover {
+            background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+            box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+            transform: translateY(-1px);
+        }
         
         .home-container {
             text-align: center;
@@ -287,6 +326,16 @@
             min-width: 180px;
             border-radius: 10px;
             margin-top: 10px;
+        }
+
+        .home-btn.edit-btn {
+            background: linear-gradient(135deg, #c9822b, #ad6f22);
+            box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35);
+        }
+
+        .home-btn.edit-btn:hover {
+            background: linear-gradient(135deg, #ad6f22, #955d1b);
+            box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4);
         }
         
         .home-btn.create {
@@ -405,6 +454,63 @@
         }
         
         /* Адаптивность из первого файла */
+        /* Страница /main2/create-new */
+        .container.new-test-edit-page {
+            max-width: 980px;
+            margin: 2rem auto;
+        }
+
+        .container.quiz-page {
+            max-width: 860px;
+            margin: 2rem auto;
+        }
+
+        .quiz-page .navigation-buttons .prev-button {
+            background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(173, 111, 34, 0.35) !important;
+        }
+
+        .quiz-page .navigation-buttons .prev-button:hover {
+            background: linear-gradient(135deg, #ad6f22, #955d1b) !important;
+            box-shadow: 0 4px 8px rgba(149, 93, 27, 0.4) !important;
+        }
+
+        .new-test-edit-page .file-info {
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .new-test-edit-page .question-block {
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .new-test-edit-page .question-header {
+            gap: 12px;
+        }
+
+        .new-test-edit-page .btn-remove-question {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .new-test-edit-page .btn-add-answer {
+            padding: 9px 16px;
+        }
+
+        .new-test-edit-page .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .new-test-edit-page .actions button {
+            width: 100%;
+            justify-content: center;
+            padding: 12px 16px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 15px;

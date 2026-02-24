@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+﻿﻿﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Quiz System{% endblock %}</title>
+    <title>Quiz System</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .navbar {
@@ -145,7 +145,7 @@
             }
         });
     </script>
-    {% block head_extra %}{% endblock %}
+    
 </head>
 <body>
     <nav class="navbar">
@@ -156,28 +156,41 @@
                 <li><a href="/main2" class="nav-link">Новый тест</a></li>
                 <li><a href="/v2" class="nav-link">Регистрация пользователей</a></li>
             </ul>
-            {% if user_info %}
-            <div class="user-profile-dropdown">
-                <button class="user-profile-btn" id="profileBtn">
-                    👤 {{ user_info.full_name }}
-                </button>
-                <div class="dropdown-content" id="profileDropdown">
-                    <div class="user-details">
-                        <p><strong>{{ user_info.full_name }}</strong></p>
-                        <p>Группа: {{ user_info.group_name }}</p>
-                        <p>Роль: {{ user_info.user_type }}</p>
-                        <p>Логин: {{ user_info.login }}</p>
-                    </div>
-                    <hr>
-                    <a href="/logout" class="logout-link">🚪 Выйти</a>
-                </div>
-            </div>
-            {% endif %}
+            
         </div>
     </nav>
     
     <main class="main-content">
-        {% block content %}{% endblock %}
+        
+<div class="container">
+    <div class="welcome-section">
+        <h2>РЎРёСЃС‚РµРјР° СЂРµРіРёСЃС‚СЂР°С†РёРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№</h2>
+        
+        <div class="action-buttons">
+            <a href="/v2/register" class="btn btn-primary">Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ</a>
+            <a href="/v2/upload" class="btn btn-save">Р—Р°РіСЂСѓР·РёС‚СЊ РёР· С„Р°Р№Р»Р°</a>
+            <a href="/v2/users" class="btn btn-cancel">РџСЂРѕСЃРјРѕС‚СЂРµС‚СЊ СЃРїРёСЃРѕРє</a>
+        </div>
+
+        <div class="quick-stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>Р‘С‹СЃС‚СЂР°СЏ СЂРµРіРёСЃС‚СЂР°С†РёСЏ</h3>
+                    <p>Р”РѕР±Р°РІСЊС‚Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РІСЂСѓС‡РЅСѓСЋ С‡РµСЂРµР· СѓРґРѕР±РЅСѓСЋ С„РѕСЂРјСѓ</p>
+                </div>
+                <div class="stat-item">
+                    <h3>РњР°СЃСЃРѕРІР°СЏ Р·Р°РіСЂСѓР·РєР°</h3>
+                    <p>РРјРїРѕСЂС‚РёСЂСѓР№С‚Рµ РґР°РЅРЅС‹Рµ РёР· CSV РёР»Рё Excel С„Р°Р№Р»РѕРІ</p>
+                </div>
+                <div class="stat-item">
+                    <h3>РЈРїСЂР°РІР»РµРЅРёРµ РґРѕСЃС‚СѓРїРѕРј</h3>
+                    <p>Р Р°Р·РґРµР»РµРЅРёРµ РЅР° РїСЂРµРїРѕРґР°РІР°С‚РµР»РµР№ Рё СЃС‚СѓРґРµРЅС‚РѕРІ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
     </main>
 </body>
 </html>
