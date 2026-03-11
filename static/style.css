@@ -241,6 +241,32 @@ body.login-page {
     margin-bottom: 0;
 }
 
+.tests-list-page .test-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.45rem;
+}
+
+.tests-list-page .test-meta-chip {
+    display: inline-block;
+    padding: 0.24rem 0.55rem;
+    border-radius: 999px;
+    background: #eef4fa;
+    border: 1px solid #d3e1ef;
+    color: #3a4b5c;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.tests-list-page .test-meta-warning {
+    margin-top: 0.45rem;
+    color: #c0392b;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
 .tests-list-page .user-actions {
     display: flex;
     align-items: center;

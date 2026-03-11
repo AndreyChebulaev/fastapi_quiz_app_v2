@@ -88,6 +88,87 @@ Path("uploaded_filesd_filesd_files").mkdir(exist_ok=True)
 # Настройка шаблонов
 templates = Jinja2Templates(directory="templates")
 
+
+def init_test_settings_table():
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS test_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT UNIQUE NOT NULL,
+            time_limit_minutes INTEGER,
+            available_until TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def get_test_settings(filename: str):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT time_limit_minutes, available_until FROM test_settings WHERE filename = ?",
+        (filename,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    time_limit_minutes = ""
+    available_until = ""
+    if row:
+        if row[0] is not None:
+            try:
+                parsed = int(row[0])
+                if parsed > 0:
+                    time_limit_minutes = str(parsed)
+            except (TypeError, ValueError):
+                time_limit_minutes = ""
+        if row[1]:
+            available_until = str(row[1]).strip()
+
+    return {
+        "time_limit_minutes": time_limit_minutes,
+        "available_until": available_until
+    }
+
+
+def upsert_test_settings(filename: str, time_limit_minutes: str, available_until: str):
+    normalized_limit = None
+    limit_value = (time_limit_minutes or "").strip()
+    if limit_value:
+        parsed_limit = int(limit_value)
+        if parsed_limit <= 0:
+            raise ValueError("Лимит времени должен быть больше 0.")
+        normalized_limit = parsed_limit
+
+    normalized_date = (available_until or "").strip() or None
+    if normalized_date:
+        try:
+            pd.to_datetime(normalized_date, format="%Y-%m-%d", errors="raise")
+        except Exception:
+            raise ValueError("Некорректная дата дедлайна. Используйте формат YYYY-MM-DD.")
+
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        '''
+        INSERT INTO test_settings (filename, time_limit_minutes, available_until, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(filename) DO UPDATE SET
+            time_limit_minutes=excluded.time_limit_minutes,
+            available_until=excluded.available_until,
+            updated_at=CURRENT_TIMESTAMP
+        ''',
+        (filename, normalized_limit, normalized_date)
+    )
+    conn.commit()
+    conn.close()
+
+
+init_test_settings_table()
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     # Проверяем авторизацию
@@ -157,7 +238,8 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
             "questions": questions_data,
             "user_info": user_info,
             "user_permissions": user_permissions,
-            "original_data": json.dumps(original_data, ensure_ascii=False) if original_data else "[]"
+            "original_data": json.dumps(original_data, ensure_ascii=False) if original_data else "[]",
+            "test_settings": get_test_settings(file.filename)
         })
     
     except Exception as e:
@@ -299,7 +381,8 @@ async def create_new(request: Request):
         "questions": [{"index": 0, "question": "", "answers": [""]}],
         "user_info": user_info,
         "user_permissions": user_permissions,
-        "original_data": "[]"
+        "original_data": "[]",
+        "test_settings": {"time_limit_minutes": "", "available_until": ""}
     })
 
 
@@ -370,7 +453,8 @@ async def edit(filename: str, request: Request):
                 "questions": questions_data,
                 "original_data": "excel_file",  # Флаг для типа файла
                 "user_info": user_info,
-                "user_permissions": user_permissions
+                "user_permissions": user_permissions,
+                "test_settings": get_test_settings(filename)
             }
         )
         
@@ -426,7 +510,9 @@ async def save_edit(
     request: Request,
     filename: str = Form(...),
     questions: list[str] = Form(...),
-    answers: list[str] = Form(...)
+    answers: list[str] = Form(...),
+    time_limit_minutes: str = Form(""),
+    available_until: str = Form("")
 ):
     user_login = get_user_from_session(request)
     if not user_login:
@@ -468,6 +554,7 @@ async def save_edit(
     try:
         # Используем нашу утилиту для сохранения без заголовков
         save_excel_file(str(file_path), data)
+        upsert_test_settings(filename, time_limit_minutes, available_until)
 
         # Возвращаем JSON ответ для асинхронного запроса
         return JSONResponse(

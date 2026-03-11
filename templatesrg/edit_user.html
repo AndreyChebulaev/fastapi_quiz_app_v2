@@ -2,6 +2,11 @@
 
 {% block head_extra %}
 <style>
+    .container.edit-user-container {
+        max-width: 780px;
+        margin: 2rem auto;
+    }
+
     .edit-form .btn.btn-cancel {
         background: linear-gradient(135deg, #c9822b, #ad6f22) !important;
         color: #ffffff !important;
@@ -29,7 +34,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container edit-user-container">
     <h2>Редактирование пользователя</h2>
     
     <form method="post" action="/v2/users/{{ user.id }}/update" class="edit-form">

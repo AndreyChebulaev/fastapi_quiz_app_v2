@@ -4,30 +4,29 @@
 {% block content %}
     <div class="registration-form tests-list-form">
         <div class="header">
-            <h1>📝 Quiz System</h1>
+            <h1>Quiz System</h1>
             <h3>Выберите тест для прохождения</h3>
         </div>
-    
+
         {% if message %}
         <div class="message success">
-            ✅ {{ message }}
+            {{ message }}
         </div>
         {% endif %}
-        
+
         {% if error %}
         <div class="message error">
-            ❌ {{ error }}
+            {{ error }}
         </div>
         {% endif %}
-        
-        <!-- Форма загрузки файла (unused)-->
+
         {% if false %}
         <div class="upload-section">
-            <h3>📤 Загрузить новый тест</h3>
+            <h3>Загрузить новый тест</h3>
             <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
                 <div class="file-upload-wrapper">
                     <label for="file" class="file-upload-label">
-                        📎 Выберите Excel файл (.xlsx)
+                        Выберите Excel файл (.xlsx)
                     </label>
                     <input type="file" id="file" name="file" accept=".xlsx" required style="display: none;">
                 </div>
@@ -35,7 +34,7 @@
             </form>
         </div>
         {% endif %}
-        
+
         <div class="users-section">
             <h3>Список тестов ({{ files|length }})</h3>
             <div class="users-list">
@@ -45,14 +44,33 @@
                         <div class="user-info">
                             <div class="user-name-actions">
                                 <div class="user-name">{{ file.name | replace('.xlsx', '') | replace('.xls', '') }}</div>
+                                <div class="test-meta-row">
+                                    <span class="test-meta-chip">
+                                        Лимит: {% if file.time_limit_minutes %}{{ file.time_limit_minutes }} мин{% else %}без лимита{% endif %}
+                                    </span>
+                                    <span class="test-meta-chip">
+                                        Дедлайн: {% if file.available_until_display %}{{ file.available_until_display }}{% else %}не задан{% endif %}
+                                    </span>
+                                </div>
+                                {% if not file.is_available %}
+                                <div class="test-meta-warning">
+                                    {{ file.unavailable_reason }}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="user-actions">
                             <form action="/select" method="post" style="display: inline;">
                                 <input type="hidden" name="filename" value="{{ file.name }}">
-                                <button type="submit" class="btn btn-primary">Начать тест</button>
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                    {% if not file.is_available %}disabled title="Дедлайн теста уже прошёл"{% endif %}
+                                >
+                                    Начать тест
+                                </button>
                             </form>
-                            
+
                             {% if user_permissions.can_delete_files %}
                             <button onclick="editFile('{{ file.name }}')" class="btn btn-edit">Изменить</button>
                             {% endif %}
@@ -73,31 +91,34 @@
     </div>
 
     <script>
-        // Добавляем обработчик для выбора файла
-        document.getElementById('file').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
-            const fileLabel = document.querySelector('.file-upload-label');
-            fileLabel.innerHTML = `📎 Выбран файл: ${fileName}`;
-        });
-        
-        // Функция для перенаправления на страницу редактирования
+        const fileInput = document.getElementById('file');
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const fileName = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
+                const fileLabel = document.querySelector('.file-upload-label');
+                if (fileLabel) {
+                    fileLabel.innerHTML = `Выбран файл: ${fileName}`;
+                }
+            });
+        }
+
         function editFile(filename) {
             window.location.href = `/main2/edit/${encodeURIComponent(filename)}`;
         }
-        
+
         async function deleteFile(filename) {
             if (confirm(`Удалить файл ${filename}?`)) {
                 const formData = new FormData();
                 formData.append('filename', filename);
-                
+
                 const response = await fetch('/delete_file', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
                 alert(result.message);
-                
+
                 if (result.status === 'success') {
                     location.reload();
                 }

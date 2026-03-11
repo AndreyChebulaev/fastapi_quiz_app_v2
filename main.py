@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import time
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import main2
 import app
 from session_manager import create_session, active_sessions
@@ -83,6 +83,7 @@ questions = []
 reference_answers = []
 user_answers = []
 all_embeddings = []
+quiz_sessions = {}
 
 # Папка для хранения загруженных файлов
 UPLOAD_DIR = "uploaded_files"
@@ -131,6 +132,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS test_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT UNIQUE NOT NULL,
+            time_limit_minutes INTEGER,
+            available_until TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
     # Создаем тестового пользователя если его нет
     cursor.execute("SELECT COUNT(*) FROM users WHERE login = 'admin'")
@@ -146,6 +157,134 @@ def init_db():
 
 init_db()
 
+
+def get_session_token(request: Request) -> Optional[str]:
+    return request.cookies.get("session_token")
+
+
+def parse_available_until(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed_date = datetime.strptime(value, "%Y-%m-%d")
+        return parsed_date + timedelta(days=1) - timedelta(seconds=1)
+    except ValueError:
+        return None
+
+
+def format_date_ru(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").strftime("%d.%m.%Y")
+    except ValueError:
+        return value
+
+
+def format_datetime_ru(value: datetime) -> str:
+    return value.strftime("%d.%m.%Y %H:%M:%S")
+
+
+def format_duration(seconds: Optional[int]) -> str:
+    if seconds is None:
+        return "--"
+    safe_seconds = max(0, int(seconds))
+    hours = safe_seconds // 3600
+    minutes = (safe_seconds % 3600) // 60
+    secs = safe_seconds % 60
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def get_test_settings(filename: str) -> Dict[str, Any]:
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT time_limit_minutes, available_until FROM test_settings WHERE filename = ?",
+        (filename,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    time_limit_minutes = None
+    available_until = None
+    if row:
+        if row[0] is not None:
+            try:
+                parsed_limit = int(row[0])
+                time_limit_minutes = parsed_limit if parsed_limit > 0 else None
+            except (TypeError, ValueError):
+                time_limit_minutes = None
+        if row[1]:
+            available_until = str(row[1]).strip()
+
+    return {
+        "time_limit_minutes": time_limit_minutes,
+        "available_until": available_until
+    }
+
+
+def get_quiz_restriction_status(request: Request) -> Dict[str, Any]:
+    session_token = get_session_token(request)
+    if not session_token:
+        return {"error": None, "remaining_seconds": None, "timed_out": False, "deadline_expired": False}
+
+    quiz_state = quiz_sessions.get(session_token)
+    if not quiz_state:
+        return {"error": None, "remaining_seconds": None, "timed_out": False, "deadline_expired": False}
+
+    now = datetime.now()
+    timed_out = False
+    deadline_expired = False
+    remaining_seconds = None
+
+    available_until_dt = parse_available_until(quiz_state.get("available_until"))
+    if available_until_dt and now > available_until_dt:
+        deadline_expired = True
+
+    time_limit_minutes = quiz_state.get("time_limit_minutes")
+    started_at = quiz_state.get("started_at")
+    if time_limit_minutes and started_at:
+        elapsed = (now - started_at).total_seconds()
+        remaining_seconds = max(0, int(time_limit_minutes * 60 - elapsed))
+        if elapsed >= time_limit_minutes * 60:
+            timed_out = True
+
+    if timed_out:
+        return {
+            "error": "Время прохождения теста истекло.",
+            "remaining_seconds": 0,
+            "timed_out": True,
+            "deadline_expired": deadline_expired
+        }
+
+    if deadline_expired:
+        return {
+            "error": "Дедлайн выполнения теста уже прошел.",
+            "remaining_seconds": remaining_seconds,
+            "timed_out": timed_out,
+            "deadline_expired": True
+        }
+
+    return {
+        "error": None,
+        "remaining_seconds": remaining_seconds,
+        "timed_out": False,
+        "deadline_expired": False
+    }
+
+
+def render_select_with_error(request: Request, error_message: str):
+    files = get_uploaded_files()
+    context = get_template_context(request)
+    context.update({
+        "request": request,
+        "files": files,
+        "error": error_message
+    })
+    return templates.TemplateResponse("select.html", context)
+
 def parse_quoted_strings(s):
     """Парсит строку с ответами в кавычках, разделенных запятыми"""
     return [m.group(1) for m in re.finditer(r'"([^"]*)"', s)]
@@ -156,10 +295,22 @@ def get_uploaded_files():
     for file_path in glob.glob(os.path.join(UPLOAD_DIR, "*.xlsx")):
         filename = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
+        settings = get_test_settings(filename)
+        available_until_dt = parse_available_until(settings.get("available_until"))
+        is_available = True
+        unavailable_reason = ""
+        if available_until_dt and datetime.now() > available_until_dt:
+            is_available = False
+            unavailable_reason = "Дедлайн уже прошел"
         files.append({
             "name": filename,
             "size": file_size,
-            "path": file_path
+            "path": file_path,
+            "time_limit_minutes": settings.get("time_limit_minutes"),
+            "available_until": settings.get("available_until"),
+            "available_until_display": format_date_ru(settings.get("available_until")),
+            "is_available": is_available,
+            "unavailable_reason": unavailable_reason
         })
     return files
 
@@ -368,6 +519,12 @@ async def load_quiz_data(request: Request, file_path: str):
         )
         # endregion
 
+        filename = os.path.basename(file_path)
+        settings = get_test_settings(filename)
+        available_until_dt = parse_available_until(settings.get("available_until"))
+        if available_until_dt and datetime.now() > available_until_dt:
+            return render_select_with_error(request, "Нельзя начать тест: дедлайн выполнения уже прошел.")
+
         if model is None:
             # Модель не загружена (например, нет интернета для HuggingFace) — даём понятную ошибку пользователю
             files = get_uploaded_files()
@@ -392,6 +549,15 @@ async def load_quiz_data(request: Request, file_path: str):
             all_embeddings.append(embeddings)
         
         user_answers = []
+
+        session_token = get_session_token(request)
+        if session_token:
+            quiz_sessions[session_token] = {
+                "filename": filename,
+                "started_at": datetime.now(),
+                "time_limit_minutes": settings.get("time_limit_minutes"),
+                "available_until": settings.get("available_until")
+            }
         
         # Перенаправляем на первый вопрос
         return RedirectResponse(url="/quiz?idx=0", status_code=303)
@@ -585,6 +751,10 @@ def quiz_form(request: Request, idx: int = 0):
     
     user_info = get_user_full_info(login)
     user_permissions = get_user_permissions(user_info['user_type'])
+
+    restriction_status = get_quiz_restriction_status(request)
+    if restriction_status["error"]:
+        return render_select_with_error(request, restriction_status["error"])
     
     if idx >= len(questions):
         return RedirectResponse(url="/final_results", status_code=303)
@@ -598,7 +768,8 @@ def quiz_form(request: Request, idx: int = 0):
         "idx": idx,
         "current_answer": current_answer,
         "total_questions": len(questions),
-        "questions": questions
+        "questions": questions,
+        "remaining_seconds": restriction_status["remaining_seconds"]
     })
     
     return templates.TemplateResponse("quiz.html", context)
@@ -609,6 +780,10 @@ async def save_answer(request: Request, idx: int = Form(...), user_answer: str =
     if not user:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
     
+    restriction_status = get_quiz_restriction_status(request)
+    if restriction_status["error"]:
+        raise HTTPException(status_code=403, detail=restriction_status["error"])
+
     global user_answers
     try:
         while len(user_answers) <= idx:
@@ -625,6 +800,10 @@ async def navigate_question(request: Request, current_idx: int = Form(...), dire
     if not user:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
     
+    restriction_status = get_quiz_restriction_status(request)
+    if restriction_status["error"]:
+        raise HTTPException(status_code=403, detail=restriction_status["error"])
+
     try:
         if direction == "next":
             new_idx = current_idx + 1
@@ -648,6 +827,10 @@ async def check_test_completion(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
     
+    restriction_status = get_quiz_restriction_status(request)
+    if restriction_status["error"]:
+        raise HTTPException(status_code=403, detail=restriction_status["error"])
+
     global user_answers, questions
     unanswered = []
     
@@ -681,8 +864,26 @@ def show_final_results(request: Request):
     user_info = get_user_full_info(user)
     user_permissions = get_user_permissions(user_info['user_type'])
     global user_answers, questions
+
+    session_token = get_session_token(request)
+    quiz_state = quiz_sessions.get(session_token) if session_token else None
+    now = datetime.now()
+    started_at = quiz_state.get("started_at") if quiz_state else None
+    finished_at = now
+    if quiz_state:
+        if quiz_state.get("finished_at"):
+            finished_at = quiz_state["finished_at"]
+        else:
+            quiz_state["finished_at"] = now
+            finished_at = now
+
+    elapsed_seconds = None
+    if started_at:
+        elapsed_seconds = max(0, int((finished_at - started_at).total_seconds()))
+    restriction_status = get_quiz_restriction_status(request)
+    force_finish = restriction_status["timed_out"] or restriction_status["deadline_expired"]
     
-    if len(user_answers) < len(questions):
+    if len(user_answers) < len(questions) and not force_finish:
         for i in range(len(questions)):
             if i >= len(user_answers) or not user_answers[i].strip():
                 context = get_template_context(request)
@@ -694,11 +895,27 @@ def show_final_results(request: Request):
                 })
                 return templates.TemplateResponse("complete_all.html", context)
     
-    user_embeddings = model.encode(user_answers, convert_to_tensor=True)
+    answers_for_scoring = list(user_answers)
+    if len(answers_for_scoring) < len(questions):
+        answers_for_scoring.extend([""] * (len(questions) - len(answers_for_scoring)))
+
+    user_embeddings = model.encode(answers_for_scoring, convert_to_tensor=True)
     results = []
     total_correct = 0
     
-    for i, (user_emb, user_answer) in enumerate(zip(user_embeddings, user_answers)):
+    for i, (user_emb, user_answer) in enumerate(zip(user_embeddings, answers_for_scoring)):
+        if not user_answer.strip():
+            results.append({
+                "question": questions[i],
+                "user_answer": "",
+                "is_correct": False,
+                "score": "0.00",
+                "best_reference_answer": reference_answers[i][0] if reference_answers[i] else "",
+                "reference_answers": reference_answers[i],
+                "max_similarity": 0.0
+            })
+            continue
+
         question_embeddings = all_embeddings[i]
         similarities = util.cos_sim(user_emb, question_embeddings)[0]
         
@@ -730,7 +947,10 @@ def show_final_results(request: Request):
         "total_correct": total_correct,
         "total_questions": total_questions,
         "percentage": f"{percentage:.1f}",
-        "threshold": THRESHOLD
+        "threshold": THRESHOLD,
+        "restriction_message": restriction_status["error"] if force_finish else None,
+        "completed_at_display": format_datetime_ru(finished_at),
+        "elapsed_time_display": format_duration(elapsed_seconds)
     })
     
     return templates.TemplateResponse("final_results.html", context)
@@ -758,3 +978,4 @@ def redirect_to_editor(request: Request):
     return RedirectResponse(url="/main2", status_code=307)
 # Для запуска:
 # uvicorn main:app --reload
+

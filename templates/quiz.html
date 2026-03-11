@@ -6,6 +6,12 @@
         Вопрос {{ idx + 1 }} из {{ questions|length }}
     </div>
 
+    {% if remaining_seconds is not none %}
+    <div class="progress" id="timerBox" style="margin-top: 10px;">
+        Осталось времени: <strong id="timeRemaining"></strong>
+    </div>
+    {% endif %}
+
     <div class="question-container">
         <h2>{{ question }}</h2>
     </div>
@@ -21,7 +27,7 @@
     <div class="navigation-buttons">
         {% if idx > 0 %}
         <button type="button" onclick="goToPrevious()" class="nav-button prev-button">
-            ← Предыдущий
+            Предыдущий
         </button>
         {% else %}
         <div></div>
@@ -33,31 +39,67 @@
         </button>
         {% else %}
         <button type="button" onclick="handleNext()" class="nav-button next-button">
-            Следующий →
+            Следующий
         </button>
         {% endif %}
     </div>
 
 <script>
+    const initialRemainingSeconds = {% if remaining_seconds is not none %}{{ remaining_seconds }}{% else %}null{% endif %};
+    let timerId = null;
+
+    function formatTime(totalSeconds) {
+        const safeSeconds = Math.max(0, totalSeconds);
+        const minutes = Math.floor(safeSeconds / 60);
+        const seconds = safeSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+        if (initialRemainingSeconds === null) {
+            return;
+        }
+        let remaining = initialRemainingSeconds;
+        const output = document.getElementById('timeRemaining');
+        if (!output) {
+            return;
+        }
+        output.textContent = formatTime(remaining);
+
+        timerId = setInterval(() => {
+            remaining -= 1;
+            output.textContent = formatTime(remaining);
+            if (remaining <= 0) {
+                clearInterval(timerId);
+                alert('Время на прохождение теста истекло.');
+                window.location.href = '/final_results';
+            }
+        }, 1000);
+    }
+
+    async function saveCurrentAnswer() {
+        const form = document.getElementById('answerForm');
+        const formData = new FormData(form);
+        const saveResponse = await fetch('/answer', {
+            method: 'POST',
+            body: formData
+        });
+        if (!saveResponse.ok) {
+            let errorText = 'Ошибка сохранения ответа';
+            try {
+                const payload = await saveResponse.json();
+                if (payload && payload.detail) {
+                    errorText = payload.detail;
+                }
+            } catch (_) {}
+            throw new Error(errorText);
+        }
+    }
+
     async function handleNext() {
         try {
-            // Сохраняем текущий ответ
-            const answerInput = document.getElementById('user_answer');
-            const currentAnswer = answerInput.value.trim();
+            await saveCurrentAnswer();
 
-            const form = document.getElementById('answerForm');
-            const formData = new FormData(form);
-
-            const saveResponse = await fetch('/answer', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!saveResponse.ok) {
-                throw new Error('Ошибка сохранения ответа');
-            }
-
-            // Переходим к следующему вопросу
             const navigateForm = new FormData();
             navigateForm.append('current_idx', '{{ idx }}');
             navigateForm.append('direction', 'next');
@@ -67,18 +109,27 @@
                 body: navigateForm
             });
 
+            if (!response.ok) {
+                let errorText = 'Ошибка перехода к следующему вопросу';
+                try {
+                    const payload = await response.json();
+                    if (payload && payload.detail) {
+                        errorText = payload.detail;
+                    }
+                } catch (_) {}
+                throw new Error(errorText);
+            }
+
             if (response.redirected) {
                 window.location.href = response.url;
             }
         } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при переходе: ' + error.message);
+            alert('Ошибка: ' + error.message);
         }
     }
 
     async function finishTest() {
         try {
-            // 1. Сохраняем текущий ответ
             const answerInput = document.getElementById('user_answer');
             const currentAnswer = answerInput.value.trim();
 
@@ -88,20 +139,8 @@
                 return;
             }
 
-            // 2. Отправляем текущий ответ
-            const form = document.getElementById('answerForm');
-            const formData = new FormData(form);
+            await saveCurrentAnswer();
 
-            const saveResponse = await fetch('/answer', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!saveResponse.ok) {
-                throw new Error('Ошибка сохранения ответа');
-            }
-
-            // 3. Проверяем полноту теста
             const checkResponse = await fetch('/check_completion', {
                 method: 'POST',
                 headers: {
@@ -111,12 +150,18 @@
             });
 
             if (!checkResponse.ok) {
-                throw new Error('Ошибка проверки завершения');
+                let errorText = 'Ошибка проверки завершения теста';
+                try {
+                    const payload = await checkResponse.json();
+                    if (payload && payload.detail) {
+                        errorText = payload.detail;
+                    }
+                } catch (_) {}
+                throw new Error(errorText);
             }
 
             const result = await checkResponse.json();
 
-            // 4. Обрабатываем результат
             if (result.completed) {
                 window.location.href = "/final_results";
             } else {
@@ -132,20 +177,13 @@
             }
 
         } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка: ' + error.message);
+            alert('Ошибка: ' + error.message);
         }
     }
 
     async function navigate(direction) {
         try {
-            const form = document.getElementById('answerForm');
-            const formData = new FormData(form);
-
-            await fetch('/answer', {
-                method: 'POST',
-                body: formData
-            });
+            await saveCurrentAnswer();
 
             const navigateForm = new FormData();
             navigateForm.append('current_idx', '{{ idx }}');
@@ -156,17 +194,29 @@
                 body: navigateForm
             });
 
+            if (!response.ok) {
+                let errorText = 'Ошибка навигации';
+                try {
+                    const payload = await response.json();
+                    if (payload && payload.detail) {
+                        errorText = payload.detail;
+                    }
+                } catch (_) {}
+                throw new Error(errorText);
+            }
+
             if (response.redirected) {
                 window.location.href = response.url;
             }
         } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при навигации');
+            alert('Ошибка: ' + error.message);
         }
     }
 
     function goToPrevious() {
         navigate('prev');
     }
+
+    startTimer();
 </script>
 {% endblock %}
