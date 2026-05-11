@@ -2,6 +2,29 @@
 {% block title %}Quiz System - Select Test File{% endblock %}
 {% block container_class %}narrow-container tests-list-page{% endblock %}
 {% block content %}
+    <style>
+        .tests-list-page .users-list .user-item.limit-expired-item {
+            border-left-color: #e74c3c !important;
+            border-color: #f1b8b3 !important;
+            background: #fff6f6;
+        }
+
+        .tests-list-page .users-list .user-item.limit-expired-item .test-meta-chip {
+            background: #fdecec;
+            border-color: #f0c2be;
+            color: #8c2f28;
+        }
+
+        .tests-list-page .btn-unavailable-start {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
+            cursor: pointer;
+        }
+
+        .tests-list-page .btn-unavailable-start:hover {
+            background: linear-gradient(135deg, #7f8c8d, #6c7a89) !important;
+        }
+    </style>
+
     <div class="registration-form tests-list-form">
         <div class="header">
             <h1>Quiz System</h1>
@@ -20,39 +43,33 @@
         </div>
         {% endif %}
 
-        {% if false %}
-        <div class="upload-section">
-            <h3>Загрузить новый тест</h3>
-            <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
-                <div class="file-upload-wrapper">
-                    <label for="file" class="file-upload-label">
-                        Выберите Excel файл (.xlsx)
-                    </label>
-                    <input type="file" id="file" name="file" accept=".xlsx" required style="display: none;">
-                </div>
-                <button type="submit" class="btn btn-upload">Загрузить файл</button>
-            </form>
-        </div>
-        {% endif %}
-
         <div class="users-section">
             <h3>Список тестов ({{ files|length }})</h3>
             <div class="users-list">
                 {% if files %}
                     {% for file in files %}
-                    <div class="user-item">
+                    <div class="user-item{% if file.is_limit_expired %} limit-expired-item{% endif %}">
                         <div class="user-info">
                             <div class="user-name-actions">
                                 <div class="user-name">{{ file.name | replace('.xlsx', '') | replace('.xls', '') }}</div>
                                 <div class="test-meta-row">
+                                    {% if file.time_limit_minutes %}
                                     <span class="test-meta-chip">
-                                        Лимит: {% if file.time_limit_minutes %}{{ file.time_limit_minutes }} мин{% else %}без лимита{% endif %}
+                                        Лимит: {{ file.time_limit_minutes }} мин
                                     </span>
+                                    {% endif %}
+                                    {% if file.max_attempts %}
                                     <span class="test-meta-chip">
-                                        Дедлайн: {% if file.available_until_display %}{{ file.available_until_display }}{% else %}не задан{% endif %}
+                                        Попытки: {{ file.attempts_used }} из {{ file.max_attempts }}
                                     </span>
+                                    {% endif %}
+                                    {% if file.available_until_display %}
+                                    <span class="test-meta-chip">
+                                        Дедлайн: {{ file.available_until_display }}
+                                    </span>
+                                    {% endif %}
                                 </div>
-                                {% if not file.is_available %}
+                                {% if not file.is_available and not file.is_limit_expired %}
                                 <div class="test-meta-warning">
                                     {{ file.unavailable_reason }}
                                 </div>
@@ -62,20 +79,27 @@
                         <div class="user-actions">
                             <form action="/select" method="post" style="display: inline;">
                                 <input type="hidden" name="filename" value="{{ file.name }}">
+                                {% if file.is_available %}
+                                <button type="submit" class="btn btn-primary">
+                                    Начать тест
+                                </button>
+                                {% else %}
                                 <button
-                                    type="submit"
-                                    class="btn btn-primary"
-                                    {% if not file.is_available %}disabled title="Дедлайн теста уже прошёл"{% endif %}
+                                    type="button"
+                                    class="btn btn-primary btn-unavailable-start"
+                                    data-reason="{{ file.unavailable_reason | e }}"
+                                    onclick="showUnavailableReason(this)"
                                 >
                                     Начать тест
                                 </button>
+                                {% endif %}
                             </form>
 
                             {% if user_permissions.can_delete_files %}
-                            <button onclick="editFile('{{ file.name }}')" class="btn btn-edit">Изменить</button>
+                            <button type="button" onclick='editFile({{ file.name | tojson }})' class="btn btn-edit">Изменить</button>
                             {% endif %}
                             {% if user_permissions.can_delete_files %}
-                            <button onclick="deleteFile('{{ file.name }}')" class="btn btn-delete">Удалить</button>
+                            <button type="button" onclick='deleteFile({{ file.name | tojson }})' class="btn btn-delete">Удалить</button>
                             {% endif %}
                         </div>
                     </div>
@@ -91,19 +115,15 @@
     </div>
 
     <script>
-        const fileInput = document.getElementById('file');
-        if (fileInput) {
-            fileInput.addEventListener('change', function(e) {
-                const fileName = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
-                const fileLabel = document.querySelector('.file-upload-label');
-                if (fileLabel) {
-                    fileLabel.innerHTML = `Выбран файл: ${fileName}`;
-                }
-            });
-        }
-
         function editFile(filename) {
             window.location.href = `/main2/edit/${encodeURIComponent(filename)}`;
+        }
+
+        function showUnavailableReason(button) {
+            const reason = (button && button.dataset && button.dataset.reason)
+                ? button.dataset.reason
+                : 'Этот тест недоступен.';
+            alert(`Тест больше пройти нельзя: ${reason}`);
         }
 
         async function deleteFile(filename) {

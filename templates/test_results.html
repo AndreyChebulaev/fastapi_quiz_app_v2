@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+{% block title %}Результаты тестов{% endblock %}
+{% block container_class %}narrow-container test-results-page{% endblock %}
+{% block content %}
+<style>
+    .test-results-page .results-wrapper {
+        max-width: 100%;
+    }
+
+    .test-results-page .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .test-results-page .results-header h2 {
+        text-align: left;
+        margin-bottom: 0.35rem;
+    }
+
+    .test-results-page .results-header > div:first-child {
+        flex: 1 1 320px;
+        min-width: 0;
+    }
+
+    .test-results-page .results-subtitle {
+        color: #5b6670;
+        font-size: 0.95rem;
+    }
+
+    .test-results-page .results-actions {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .test-results-page .btn-print,
+    .test-results-page .btn-export {
+        min-width: 165px;
+    }
+
+    .test-results-page .filters-box {
+        border: 1px solid #dfe6ee;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.9rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .test-results-page .filters-form {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .test-results-page .search-row {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .test-results-page .search-hint {
+        margin: 0;
+        color: #667381;
+        font-size: 0.82rem;
+    }
+
+    .test-results-page .filters-grid {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .test-results-page .filters-grid > .filter-field:first-child {
+        display: none;
+    }
+
+    .test-results-page .filter-field label {
+        display: block;
+        margin-bottom: 0.28rem;
+        font-size: 0.82rem;
+        color: #586573;
+        font-weight: 600;
+    }
+
+    .test-results-page .filter-field input,
+    .test-results-page .filter-field select {
+        width: 100%;
+        border: 1px solid #cfd9e3;
+        border-radius: 8px;
+        padding: 0.5rem 0.58rem;
+        font-size: 0.9rem;
+        background: #fff;
+    }
+
+    .test-results-page .filters-actions {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+    }
+
+    .test-results-page .btn-reset {
+        background: #f2f7fb;
+        color: #1f4f79;
+        border: 1px solid #9eb8cf;
+        font-weight: 600;
+    }
+
+    .test-results-page .btn-reset:hover {
+        background: #e6f0f8;
+        color: #163f63;
+    }
+
+    .test-results-page .table-box {
+        border: 1px solid #dfe6ee;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .test-results-page .table-scroll {
+        overflow-x: auto;
+    }
+
+    .test-results-page .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 920px;
+    }
+
+    .test-results-page .results-table thead th {
+        background: #f2f6fa;
+        color: #2c3e50;
+        text-align: left;
+        padding: 0.8rem 0.9rem;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #dfe6ee;
+    }
+
+    .test-results-page .results-table tbody td {
+        padding: 0.82rem 0.9rem;
+        border-bottom: 1px solid #ecf1f6;
+        vertical-align: top;
+    }
+
+    .test-results-page .results-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .test-results-page .user-main {
+        font-weight: 600;
+        color: #1f2d3a;
+    }
+
+    .test-results-page .user-sub {
+        margin-top: 0.2rem;
+        color: #667381;
+        font-size: 0.82rem;
+    }
+
+    .test-results-page .status-chip {
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .test-results-page .status-chip.normal {
+        color: #1d7f45;
+        background: #eaf9ef;
+        border: 1px solid #bde4ca;
+    }
+
+    .test-results-page .status-chip.forced {
+        color: #9a2c22;
+        background: #fdeeee;
+        border: 1px solid #f0c5c1;
+    }
+
+    .test-results-page .btn-open-details {
+        display: inline-block;
+        padding: 0.42rem 0.65rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        background: #1f6aa5;
+        color: #ffffff;
+        border: 1px solid #155382;
+    }
+
+    .test-results-page .btn-open-details:hover {
+        background: #175886;
+        color: #ffffff;
+    }
+
+    .test-results-page .print-summary {
+        display: none;
+        margin-bottom: 0.9rem;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid #dfe6ee;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .test-results-page .print-summary p {
+        margin: 0.2rem 0;
+    }
+
+    @media (max-width: 768px) {
+        .test-results-page .results-subtitle {
+            font-size: 0.9rem;
+        }
+    }
+
+    @media print {
+        .navbar,
+        .test-results-page .filters-box,
+        .test-results-page .results-actions,
+        .test-results-page .col-details,
+        .test-results-page .cell-details {
+            display: none !important;
+        }
+
+        .container.test-results-page {
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: #fff !important;
+        }
+
+        .test-results-page .results-wrapper {
+            max-width: none;
+        }
+
+        .test-results-page .table-box {
+            border: none;
+            border-radius: 0;
+            overflow: visible;
+        }
+
+        .test-results-page .table-scroll {
+            overflow: visible;
+        }
+
+        .test-results-page .results-table {
+            min-width: 0;
+        }
+
+        .test-results-page .print-summary {
+            display: block;
+        }
+    }
+</style>
+
+<div class="results-wrapper">
+    <div class="results-header">
+        <div>
+            <h2>Результаты тестов</h2>
+            {% if show_user_column %}
+            <p class="results-subtitle">Последние попытки всех пользователей: {{ results_count }}</p>
+            {% else %}
+            <p class="results-subtitle">Ваши попытки: {{ results_count }}</p>
+            {% endif %}
+        </div>
+
+        <div class="results-actions">
+            <button type="button" class="btn btn-secondary btn-print" onclick="printResultsPage()">Печать</button>
+            <button type="button" class="btn btn-primary btn-export" onclick="exportResultsPage()">Выгрузить Excel</button>
+        </div>
+    </div>
+
+    <div class="print-summary">
+        <p><strong>Отчет:</strong> результаты тестов</p>
+        <p><strong>Поиск:</strong> {{ filters.q or "—" }}</p>
+        <p><strong>Статус:</strong>
+            {% if filters.status == "normal" %}
+            Обычное
+            {% elif filters.status == "forced" %}
+            Принудительное
+            {% else %}
+            Все
+            {% endif %}
+        </p>
+        <p><strong>Тест:</strong> {{ filters.test or "Все тесты" }}</p>
+        <p><strong>Период:</strong> {{ filters.date_from or "—" }} - {{ filters.date_to or "—" }}</p>
+        <p><strong>Количество записей:</strong> {{ results_count }}</p>
+    </div>
+
+    <div class="filters-box">
+        <form method="get" action="/results" class="filters-form" id="results-filters-form">
+            <div class="search-row">
+                <div class="filter-field">
+                    <label for="q">Поиск</label>
+                    <input
+                        type="search"
+                        id="q"
+                        name="q"
+                        value="{{ filters.q }}"
+                        placeholder="Фамилия, имя, группа, логин, тест"
+                    >
+                </div>
+                <p class="search-hint">Можно искать по фамилии, имени, отчеству, группе, логину или названию теста. Допускается вводить сразу несколько слов.</p>
+            </div>
+
+            <div class="filters-grid">
+                <div class="filter-field">
+                    <label for="q">Поиск</label>
+                    <input
+                        type="search"
+                        id="q"
+                        name="q"
+                        value="{{ filters.q }}"
+                        placeholder="Пользователь, группа, тест"
+                    >
+                </div>
+
+                <div class="filter-field">
+                    <label for="status">Статус</label>
+                    <select id="status" name="status">
+                        <option value="all" {% if filters.status == 'all' %}selected{% endif %}>Все</option>
+                        <option value="normal" {% if filters.status == 'normal' %}selected{% endif %}>Обычное</option>
+                        <option value="forced" {% if filters.status == 'forced' %}selected{% endif %}>Принудительное</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="test">Тест</label>
+                    <select id="test" name="test">
+                        <option value="">Все тесты</option>
+                        {% for opt in test_options %}
+                        <option value="{{ opt.filename }}" {% if filters.test == opt.filename %}selected{% endif %}>{{ opt.test_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="date_from">С даты</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ filters.date_from }}">
+                </div>
+
+                <div class="filter-field">
+                    <label for="date_to">По дату</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ filters.date_to }}">
+                </div>
+            </div>
+
+            <div class="filters-actions">
+                <button type="submit" class="btn btn-primary">Применить</button>
+                <a href="/results" class="btn btn-secondary btn-reset">Сбросить</a>
+            </div>
+        </form>
+    </div>
+
+    {% if results %}
+    <div class="table-box">
+        <div class="table-scroll">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        {% if show_user_column %}
+                        <th>Пользователь</th>
+                        {% endif %}
+                        <th>Тест</th>
+                        <th>Попытка</th>
+                        <th>Результат</th>
+                        <th>Процент</th>
+                        <th>Время</th>
+                        <th>Завершен</th>
+                        <th>Статус</th>
+                        <th class="col-details">Детали</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in results %}
+                    <tr>
+                        {% if show_user_column %}
+                        <td>
+                            <div class="user-main">{{ item.full_name }}</div>
+                            <div class="user-sub">
+                                {{ item.login }}{% if item.group_name %} • {{ item.group_name }}{% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                        <td>{{ item.test_name }}</td>
+                        <td>{{ item.attempt_number }}</td>
+                        <td>{{ item.total_correct }} / {{ item.total_questions }}</td>
+                        <td>{{ item.percentage_display }}%</td>
+                        <td>{{ item.elapsed_time_display }}</td>
+                        <td>{{ item.finished_at_display }}</td>
+                        <td>
+                            {% if item.forced_finish %}
+                            <span class="status-chip forced">Принудительное</span>
+                            {% else %}
+                            <span class="status-chip normal">Обычное</span>
+                            {% endif %}
+                        </td>
+                        <td class="cell-details">
+                            <a href="/results/{{ item.id }}" class="btn btn-secondary btn-open-details">Открыть</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-users">
+        <h3>Результатов пока нет</h3>
+        <p>Пройдите тест, и результаты появятся на этой странице.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function buildResultsQuery() {
+        const form = document.getElementById('results-filters-form');
+        if (!form) {
+            return '';
+        }
+
+        const params = new URLSearchParams(new FormData(form));
+        for (const key of Array.from(params.keys())) {
+            if (!params.get(key)) {
+                params.delete(key);
+            }
+        }
+        return params.toString();
+    }
+
+    function exportResultsPage() {
+        const query = buildResultsQuery();
+        window.location.href = query ? `/results/export?${query}` : '/results/export';
+    }
+
+    function printResultsPage() {
+        window.print();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const filtersGrid = document.querySelector('.test-results-page .filters-grid');
+        const duplicateSearchField = filtersGrid ? filtersGrid.querySelector('.filter-field:first-child') : null;
+        const duplicateSearchInput = duplicateSearchField ? duplicateSearchField.querySelector('input[name="q"]') : null;
+
+        if (duplicateSearchField && duplicateSearchInput) {
+            duplicateSearchField.remove();
+        }
+    });
+</script>
+{% endblock %}

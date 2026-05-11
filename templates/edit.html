@@ -2,15 +2,262 @@
 {% block container_class %}new-test-edit-page{% endblock %}
 
 {% block content %}
+<style>
+    .access-dropdown {
+        position: relative;
+    }
+
+    .access-display {
+        width: 100%;
+        padding: 12px;
+        background: #fff;
+        cursor: pointer;
+        padding-right: 36px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px 8px;
+    }
+
+    .access-panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 4px);
+        background: #fff;
+        border: 1px solid #ddd;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        border-radius: 6px;
+        padding: 8px 0;
+        max-height: 260px;
+        overflow: hidden;
+        display: none;
+        z-index: 10;
+    }
+
+    .access-panel.is-open {
+        display: block;
+    }
+
+    .access-search {
+        width: calc(100% - 16px);
+        margin: 0 8px 8px 8px;
+        padding: 10px;
+    }
+
+    .access-list {
+        max-height: 200px;
+        overflow: auto;
+        padding: 0 8px 8px 8px;
+    }
+
+    .access-item {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 6px 0;
+        font-size: 14px;
+    }
+
+    .access-item input[type="checkbox"] {
+        margin-top: 2px;
+    }
+
+    .access-empty {
+        padding: 8px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .editor-toolbar {
+        margin-bottom: 18px;
+    }
+
+    .editor-file-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    .editor-file-copy {
+        flex: 1 1 320px;
+        min-width: 0;
+    }
+
+    .editor-file-copy h3 {
+        margin: 0 0 6px 0;
+    }
+
+    .editor-file-copy p {
+        margin: 0;
+        color: #666;
+    }
+
+    .editor-toolbar-actions {
+        display: flex;
+        align-items: stretch;
+        justify-content: flex-end;
+        gap: 10px;
+        flex: 1 1 360px;
+        flex-wrap: wrap;
+    }
+
+    .editor-upload-form {
+        display: grid;
+        grid-template-columns: minmax(140px, 1fr) auto auto;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid #d7dee8;
+        border-radius: 12px;
+        background: #f8fbff;
+        min-width: min(100%, 420px);
+    }
+
+    .editor-upload-meta {
+        min-width: 0;
+    }
+
+    .editor-upload-title {
+        display: block;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #243647;
+        line-height: 1.2;
+    }
+
+    .editor-upload-filename {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.78rem;
+        color: #6b7b8c;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .editor-upload-label,
+    .editor-upload-submit,
+    .editor-download-btn {
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .editor-upload-label {
+        background: #e7eef7;
+        color: #29435b;
+        text-align: center;
+    }
+
+    .editor-upload-label:hover {
+        background: #dbe7f4;
+    }
+
+    .editor-upload-submit {
+        background: linear-gradient(135deg, #3498db, #2f80c1);
+        color: #fff;
+        box-shadow: 0 3px 10px rgba(52, 152, 219, 0.24);
+    }
+
+    .editor-upload-submit:hover,
+    .editor-download-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .editor-download-btn {
+        background: linear-gradient(135deg, #1f7a5a, #176147);
+        color: #fff;
+        box-shadow: 0 3px 10px rgba(23, 97, 71, 0.24);
+    }
+
+    .editor-download-hint {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #f5f7fa;
+        color: #6b7785;
+        font-size: 0.84rem;
+        font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+        .editor-toolbar-actions {
+            justify-content: stretch;
+        }
+
+        .editor-upload-form {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .editor-upload-meta {
+            grid-column: 1 / -1;
+        }
+
+        .editor-download-btn,
+        .editor-download-hint {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .editor-upload-form {
+            grid-template-columns: 1fr;
+        }
+
+        .editor-upload-label,
+        .editor-upload-submit {
+            width: 100%;
+        }
+    }
+</style>
+
 <h2>Редактирование вопросов и ответов</h2>
+
+<div class="editor-toolbar">
+    <div class="file-info editor-file-info">
+        <div class="editor-file-copy">
+            <h3>Файл: {{ "Новый тест" if filename == "new_file.xlsx" else filename }}</h3>
+            <p>Редактируйте вопросы ниже или импортируйте другой Excel-файл прямо из редактора.</p>
+        </div>
+
+        <div class="editor-toolbar-actions">
+            <form action="/main2/upload" method="post" enctype="multipart/form-data" class="editor-upload-form">
+                <div class="editor-upload-meta">
+                    <span class="editor-upload-title">Импорт Excel</span>
+                    <span class="editor-upload-filename" id="editor-upload-filename">.xlsx или .xls</span>
+                </div>
+                <label for="editor-upload-input" class="editor-upload-label">Выбрать файл</label>
+                <input type="file" id="editor-upload-input" name="file" accept=".xlsx,.xls" required style="display: none;">
+                <button type="submit" class="editor-upload-submit">Загрузить</button>
+            </form>
+
+            {% if filename != "new_file.xlsx" %}
+            <button type="button" class="editor-download-btn" onclick='downloadCurrentFile({{ filename | tojson }})'>
+                Скачать Excel
+            </button>
+            {% else %}
+            <div class="editor-download-hint">
+                Скачивание появится после сохранения файла.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <form action="/main2/save" method="post" id="main-form" class="{% if filename == 'new_file.xlsx' %}create-test-form{% endif %}">
     <input type="hidden" name="filename" value="{{ filename }}">
     <input type="hidden" name="original_data" value="{{ original_data }}">
-
-    <div class="file-info">
-        <h3>Файл: {{ filename }}</h3>
-        <p style="margin: 0; color: #666;">Используйте форму ниже для редактирования теста.</p>
-    </div>
 
     <div class="settings-block">
         <div class="question-header">
@@ -29,6 +276,18 @@
             >
         </div>
         <div class="form-group">
+            <label>Лимит попыток прохождения:</label>
+            <input
+                type="number"
+                id="max_attempts"
+                min="1"
+                step="1"
+                value="{{ test_settings.max_attempts if test_settings else '' }}"
+                placeholder="Например: 3"
+                style="padding: 12px;"
+            >
+        </div>
+        <div class="form-group">
             <label>Дедлайн выполнения:</label>
             <input
                 type="date"
@@ -37,10 +296,61 @@
                 style="padding: 12px;"
             >
         </div>
+        <div class="form-group">
+            <label>Доступ для студентов:</label>
+            <div class="access-dropdown">
+                <input type="text" id="allowed_students_display" class="access-display" placeholder="Выберите студентов" readonly>
+                <div class="access-panel" id="allowed_students_panel">
+                    <input type="text" id="allowed_students_search" class="access-search" placeholder="Поиск по логину, ФИО или группе">
+                    <div class="access-list" id="allowed_students_list">
+                        {% if access_students %}
+                            {% for student in access_students %}
+                            <label class="access-item">
+                                <input type="checkbox"
+                                       class="allowed-student-checkbox"
+                                       value="{{ student.value }}"
+                                       data-label="{{ student.label }}"
+                                       {% if student.value in allowed_students_list %}checked{% endif %}>
+                                <span>{{ student.label }}</span>
+                            </label>
+                            {% endfor %}
+                        {% else %}
+                            <div class="access-empty">Нет студентов в базе</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Доступ для групп:</label>
+            <div class="access-dropdown">
+                <input type="text" id="allowed_groups_display" class="access-display" placeholder="Выберите группы" readonly>
+                <div class="access-panel" id="allowed_groups_panel">
+                    <input type="text" id="allowed_groups_search" class="access-search" placeholder="Поиск по названию группы">
+                    <div class="access-list" id="allowed_groups_list">
+                        {% if access_groups %}
+                            {% for group in access_groups %}
+                            <label class="access-item">
+                                <input type="checkbox"
+                                       class="allowed-group-checkbox"
+                                       value="{{ group }}"
+                                       data-label="{{ group }}"
+                                       {% if group in allowed_groups_list %}checked{% endif %}>
+                                <span>{{ group }}</span>
+                            </label>
+                            {% endfor %}
+                        {% else %}
+                            <div class="access-empty">Нет групп в базе</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="questions-container">
         {% for question in questions %}
+        {% set answer_list = question.answers if question.answers else [''] %}
         <div class="question-block" data-index="{{ loop.index0 }}">
             <div class="question-header">
                 <h3>Вопрос {{ loop.index }}</h3>
@@ -59,7 +369,7 @@
             <div class="form-group">
                 <label>Ответы:</label>
                 <div class="answers-container" id="answers-{{ loop.index0 }}">
-                    {% for answer in question.answers %}
+                    {% for answer in answer_list %}
                     <div class="answer-row">
                         <input type="text" class="answer-input" value="{{ answer }}"
                                placeholder="Введите вариант ответа..."
@@ -186,6 +496,112 @@ function removeAnswer(button) {
     }
 }
 
+function getCheckedValues(selector) {
+    return Array.from(document.querySelectorAll(`${selector}:checked`))
+        .map((checkbox) => checkbox.value.trim())
+        .filter(Boolean)
+        .join(', ');
+}
+
+function getCheckedLabels(selector) {
+    return Array.from(document.querySelectorAll(`${selector}:checked`))
+        .map((checkbox) => checkbox.dataset.label || checkbox.value)
+        .filter(Boolean)
+        .join(', ');
+}
+
+function updateAccessDisplay(displayId, checkboxSelector) {
+    const display = document.getElementById(displayId);
+    if (!display) {
+        return;
+    }
+    const labels = getCheckedLabels(checkboxSelector);
+    const placeholder = display.getAttribute('placeholder') || '';
+    display.value = labels || placeholder;
+}
+
+function togglePanel(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel) {
+        return;
+    }
+    const isOpen = panel.classList.contains('is-open');
+    document.querySelectorAll('.access-panel.is-open').forEach((openPanel) => {
+        openPanel.classList.remove('is-open');
+    });
+    if (!isOpen) {
+        panel.classList.add('is-open');
+    }
+}
+
+function filterAccessList(searchId, listId) {
+    const search = document.getElementById(searchId);
+    const list = document.getElementById(listId);
+    if (!search || !list) {
+        return;
+    }
+    const term = search.value.trim().toLowerCase();
+    Array.from(list.querySelectorAll('.access-item')).forEach((item) => {
+        const text = (item.textContent || '').toLowerCase();
+        item.style.display = !term || text.includes(term) ? '' : 'none';
+    });
+}
+
+function downloadCurrentFile(filename) {
+    window.location.href = `/main2/download/${encodeURIComponent(filename)}`;
+}
+
+const editorUploadInput = document.getElementById('editor-upload-input');
+const editorUploadFilename = document.getElementById('editor-upload-filename');
+if (editorUploadInput && editorUploadFilename) {
+    editorUploadInput.addEventListener('change', function(event) {
+        const chosenFile = event.target.files && event.target.files[0] ? event.target.files[0].name : '.xlsx или .xls';
+        editorUploadFilename.textContent = chosenFile;
+    });
+}
+
+const studentsDisplay = document.getElementById('allowed_students_display');
+const studentsPanel = document.getElementById('allowed_students_panel');
+const studentsSearch = document.getElementById('allowed_students_search');
+if (studentsDisplay && studentsPanel) {
+    studentsDisplay.addEventListener('click', (event) => {
+        event.stopPropagation();
+        togglePanel('allowed_students_panel');
+    });
+    studentsPanel.addEventListener('click', (event) => event.stopPropagation());
+}
+document.querySelectorAll('.allowed-student-checkbox').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => updateAccessDisplay('allowed_students_display', '.allowed-student-checkbox'));
+});
+if (studentsSearch) {
+    studentsSearch.addEventListener('input', () => filterAccessList('allowed_students_search', 'allowed_students_list'));
+}
+updateAccessDisplay('allowed_students_display', '.allowed-student-checkbox');
+
+const groupsDisplay = document.getElementById('allowed_groups_display');
+const groupsPanel = document.getElementById('allowed_groups_panel');
+const groupsSearch = document.getElementById('allowed_groups_search');
+if (groupsDisplay && groupsPanel) {
+    groupsDisplay.addEventListener('click', (event) => {
+        event.stopPropagation();
+        togglePanel('allowed_groups_panel');
+    });
+    groupsPanel.addEventListener('click', (event) => event.stopPropagation());
+}
+document.querySelectorAll('.allowed-group-checkbox').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => updateAccessDisplay('allowed_groups_display', '.allowed-group-checkbox'));
+});
+if (groupsSearch) {
+    groupsSearch.addEventListener('input', () => filterAccessList('allowed_groups_search', 'allowed_groups_list'));
+}
+updateAccessDisplay('allowed_groups_display', '.allowed-group-checkbox');
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.access-panel.is-open').forEach((openPanel) => {
+        openPanel.classList.remove('is-open');
+    });
+});
+
 document.getElementById('main-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -195,7 +611,10 @@ document.getElementById('main-form').addEventListener('submit', function(e) {
     formData.append('filename', document.querySelector('input[name="filename"]').value);
     formData.append('original_data', document.querySelector('input[name="original_data"]').value);
     formData.append('time_limit_minutes', document.getElementById('time_limit_minutes').value.trim());
+    formData.append('max_attempts', document.getElementById('max_attempts').value.trim());
     formData.append('available_until', document.getElementById('available_until').value);
+    formData.append('allowed_students', getCheckedValues('.allowed-student-checkbox'));
+    formData.append('allowed_groups', getCheckedValues('.allowed-group-checkbox'));
 
     questionBlocks.forEach((block) => {
         const questionInput = block.querySelector('input[name="questions"]');

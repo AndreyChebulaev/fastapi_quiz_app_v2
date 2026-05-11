@@ -12,13 +12,35 @@ import sqlite3
 import secrets
 import sys
 import importlib
+import re
 from session_manager import get_user_from_session as get_main_session_user
 import ast
 
 app = FastAPI(title="Excel Questions Editor")
 
+IMPORTED_FILES_DIR = Path("uploaded_files_imports")
+SAVED_FILES_DIR = Path("uploaded_files")
+
 # Создаем директории
-Path("uploaded_filesd_filesd_files").mkdir(exist_ok=True)
+IMPORTED_FILES_DIR.mkdir(exist_ok=True)
+SAVED_FILES_DIR.mkdir(exist_ok=True)
+
+
+def normalize_excel_filename(filename: str) -> str:
+    safe_filename = os.path.basename((filename or "").strip())
+    if not safe_filename:
+        raise HTTPException(status_code=400, detail="Не указано имя файла")
+    if not safe_filename.lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Разрешены только Excel файлы")
+    return safe_filename
+
+
+def get_imported_file_path(filename: str) -> Path:
+    return IMPORTED_FILES_DIR / normalize_excel_filename(filename)
+
+
+def get_saved_file_path(filename: str) -> Path:
+    return SAVED_FILES_DIR / normalize_excel_filename(filename)
 
 def get_user_from_session(request: Request) -> str:
     """Получает пользователя из сессии (совместимо с основным приложением)"""
@@ -82,9 +104,6 @@ def get_user_permissions(user_type: str):
     }
     return permissions
 
-# Создаем директории
-Path("uploaded_filesd_filesd_files").mkdir(exist_ok=True)
-
 # Настройка шаблонов
 templates = Jinja2Templates(directory="templates")
 
@@ -98,9 +117,21 @@ def init_test_settings_table():
             filename TEXT UNIQUE NOT NULL,
             time_limit_minutes INTEGER,
             available_until TEXT,
+            max_attempts INTEGER,
+            allowed_students TEXT,
+            allowed_groups TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # Миграция для старых БД
+    cursor.execute("PRAGMA table_info(test_settings)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+    if "allowed_students" not in existing_columns:
+        cursor.execute("ALTER TABLE test_settings ADD COLUMN allowed_students TEXT")
+    if "allowed_groups" not in existing_columns:
+        cursor.execute("ALTER TABLE test_settings ADD COLUMN allowed_groups TEXT")
+    if "max_attempts" not in existing_columns:
+        cursor.execute("ALTER TABLE test_settings ADD COLUMN max_attempts INTEGER")
     conn.commit()
     conn.close()
 
@@ -109,7 +140,7 @@ def get_test_settings(filename: str):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT time_limit_minutes, available_until FROM test_settings WHERE filename = ?",
+        "SELECT time_limit_minutes, available_until, allowed_students, allowed_groups, max_attempts FROM test_settings WHERE filename = ?",
         (filename,)
     )
     row = cursor.fetchone()
@@ -117,6 +148,9 @@ def get_test_settings(filename: str):
 
     time_limit_minutes = ""
     available_until = ""
+    allowed_students = ""
+    allowed_groups = ""
+    max_attempts = ""
     if row:
         if row[0] is not None:
             try:
@@ -127,14 +161,100 @@ def get_test_settings(filename: str):
                 time_limit_minutes = ""
         if row[1]:
             available_until = str(row[1]).strip()
+        if len(row) > 2 and row[2]:
+            allowed_students = str(row[2]).strip()
+        if len(row) > 3 and row[3]:
+            allowed_groups = str(row[3]).strip()
+        if len(row) > 4 and row[4] is not None:
+            try:
+                parsed_attempts = int(row[4])
+                if parsed_attempts > 0:
+                    max_attempts = str(parsed_attempts)
+            except (TypeError, ValueError):
+                max_attempts = ""
 
     return {
         "time_limit_minutes": time_limit_minutes,
-        "available_until": available_until
+        "available_until": available_until,
+        "allowed_students": allowed_students,
+        "allowed_groups": allowed_groups,
+        "max_attempts": max_attempts
     }
 
 
-def upsert_test_settings(filename: str, time_limit_minutes: str, available_until: str):
+def parse_access_list(value: str) -> list[str]:
+    if not value:
+        return []
+    parts = re.split(r"[,\n;]+", str(value))
+    return [p.strip() for p in parts if p.strip()]
+
+
+def normalize_access_value(value: str) -> str:
+    parts = parse_access_list(value)
+    return ", ".join(parts)
+
+
+def get_access_students() -> list[dict[str, str]]:
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT last_name, first_name, middle_name, login, group_name
+        FROM users
+        WHERE user_type = 'student'
+        ORDER BY last_name, first_name, login
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    students = []
+    for last_name, first_name, middle_name, login, group_name in rows:
+        if not login:
+            continue
+        full_name = f"{last_name or ''} {first_name or ''}".strip()
+        if middle_name:
+            full_name = f"{full_name} {middle_name}".strip()
+        label = full_name if full_name else "Без имени"
+        if group_name:
+            label = f"{label} — {group_name}"
+        students.append({
+            "value": login,
+            "label": label
+        })
+    return students
+
+
+def get_access_groups() -> list[str]:
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT group_name
+        FROM users
+        WHERE group_name IS NOT NULL AND TRIM(group_name) <> ''
+          AND user_type != 'admin'
+        ORDER BY group_name
+    """)
+    groups = [row[0] for row in cursor.fetchall() if row[0]]
+    conn.close()
+    return groups
+
+
+def build_access_context(test_settings: dict) -> dict:
+    return {
+        "access_students": get_access_students(),
+        "access_groups": get_access_groups(),
+        "allowed_students_list": parse_access_list(test_settings.get("allowed_students", "")),
+        "allowed_groups_list": parse_access_list(test_settings.get("allowed_groups", "")),
+    }
+
+
+def upsert_test_settings(
+    filename: str,
+    time_limit_minutes: str,
+    max_attempts: str,
+    available_until: str,
+    allowed_students: str,
+    allowed_groups: str
+):
     normalized_limit = None
     limit_value = (time_limit_minutes or "").strip()
     if limit_value:
@@ -143,6 +263,14 @@ def upsert_test_settings(filename: str, time_limit_minutes: str, available_until
             raise ValueError("Лимит времени должен быть больше 0.")
         normalized_limit = parsed_limit
 
+    normalized_max_attempts = None
+    max_attempts_value = (max_attempts or "").strip()
+    if max_attempts_value:
+        parsed_attempts = int(max_attempts_value)
+        if parsed_attempts <= 0:
+            raise ValueError("Лимит попыток должен быть больше 0.")
+        normalized_max_attempts = parsed_attempts
+
     normalized_date = (available_until or "").strip() or None
     if normalized_date:
         try:
@@ -150,18 +278,26 @@ def upsert_test_settings(filename: str, time_limit_minutes: str, available_until
         except Exception:
             raise ValueError("Некорректная дата дедлайна. Используйте формат YYYY-MM-DD.")
 
+    normalized_students = normalize_access_value(allowed_students)
+    normalized_groups = normalize_access_value(allowed_groups)
+    stored_students = normalized_students if normalized_students else None
+    stored_groups = normalized_groups if normalized_groups else None
+
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     cursor.execute(
         '''
-        INSERT INTO test_settings (filename, time_limit_minutes, available_until, updated_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO test_settings (filename, time_limit_minutes, max_attempts, available_until, allowed_students, allowed_groups, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(filename) DO UPDATE SET
             time_limit_minutes=excluded.time_limit_minutes,
+            max_attempts=excluded.max_attempts,
             available_until=excluded.available_until,
+            allowed_students=excluded.allowed_students,
+            allowed_groups=excluded.allowed_groups,
             updated_at=CURRENT_TIMESTAMP
         ''',
-        (filename, normalized_limit, normalized_date)
+        (filename, normalized_limit, normalized_max_attempts, normalized_date, stored_students, stored_groups)
     )
     conn.commit()
     conn.close()
@@ -212,13 +348,14 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Только Excel файлы разрешены")
     
     # Сохраняем файл
-    file_path = f"uploaded_filesd_filesd_files/{file.filename}"
+    safe_filename = normalize_excel_filename(file.filename)
+    file_path = get_imported_file_path(safe_filename)
     with open(file_path, "wb") as f:
         f.write(await file.read())
     
     # Обрабатываем файл
     try:
-        original_data = process_excel_file(file_path)
+        original_data = process_excel_file(str(file_path))
         questions_data = []
         
         # Обрабатываем все строки как данные (без заголовков)
@@ -232,15 +369,18 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
                     "answers": answers
                 })
         
-        return templates.TemplateResponse("edit.html", {
+        test_settings = get_test_settings(safe_filename)
+        context = {
             "request": request,
-            "filename": file.filename,
+            "filename": safe_filename,
             "questions": questions_data,
             "user_info": user_info,
             "user_permissions": user_permissions,
             "original_data": json.dumps(original_data, ensure_ascii=False) if original_data else "[]",
-            "test_settings": get_test_settings(file.filename)
-        })
+            "test_settings": test_settings
+        }
+        context.update(build_access_context(test_settings))
+        return templates.TemplateResponse("edit.html", context)
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Ошибка обработки файла: {str(e)}")
@@ -349,13 +489,14 @@ async def download_file(filename: str, request: Request = None):
         if not user_permissions['can_edit_tests']:
             raise HTTPException(status_code=403, detail="У вас нет прав для скачивания файлов")
     
-    file_path = f"uploaded_files/{filename}"
-    if not os.path.exists(file_path):
+    safe_filename = normalize_excel_filename(filename)
+    file_path = get_saved_file_path(safe_filename)
+    if not file_path.exists():
         raise HTTPException(status_code=404, detail="Файл не найден")
     
     return FileResponse(
-        path=file_path,
-        filename=filename,
+        path=str(file_path),
+        filename=safe_filename,
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
@@ -375,15 +516,24 @@ async def create_new(request: Request):
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/select", status_code=303)
     
-    return templates.TemplateResponse("edit.html", {
+    test_settings = {
+        "time_limit_minutes": "",
+        "available_until": "",
+        "allowed_students": "",
+        "allowed_groups": "",
+        "max_attempts": ""
+    }
+    context = {
         "request": request,
         "filename": "new_file.xlsx",
         "questions": [{"index": 0, "question": "", "answers": [""]}],
         "user_info": user_info,
         "user_permissions": user_permissions,
         "original_data": "[]",
-        "test_settings": {"time_limit_minutes": "", "available_until": ""}
-    })
+        "test_settings": test_settings
+    }
+    context.update(build_access_context(test_settings))
+    return templates.TemplateResponse("edit.html", context)
 
 
 
@@ -403,9 +553,8 @@ async def edit(filename: str, request: Request):
         return RedirectResponse(url="/select", status_code=303)
     
     # Путь к директории с файлами
-    FILES_DIR = Path("uploaded_files")
-    
-    file_path = FILES_DIR / filename
+    safe_filename = normalize_excel_filename(filename)
+    file_path = get_saved_file_path(safe_filename)
     
     if not file_path.exists():
         from fastapi.responses import JSONResponse
@@ -445,18 +594,18 @@ async def edit(filename: str, request: Request):
         from fastapi.templating import Jinja2Templates
         templates = Jinja2Templates(directory="templates")
         
-        return templates.TemplateResponse(
-            "edit.html",
-            {
-                "request": request,
-                "filename": filename,
-                "questions": questions_data,
-                "original_data": "excel_file",  # Флаг для типа файла
-                "user_info": user_info,
-                "user_permissions": user_permissions,
-                "test_settings": get_test_settings(filename)
-            }
-        )
+        test_settings = get_test_settings(safe_filename)
+        context = {
+            "request": request,
+            "filename": safe_filename,
+            "questions": questions_data,
+            "original_data": "excel_file",
+            "user_info": user_info,
+            "user_permissions": user_permissions,
+            "test_settings": test_settings
+        }
+        context.update(build_access_context(test_settings))
+        return templates.TemplateResponse("edit.html", context)
         
     except Exception as e:
         import traceback
@@ -512,7 +661,10 @@ async def save_edit(
     questions: list[str] = Form(...),
     answers: list[str] = Form(...),
     time_limit_minutes: str = Form(""),
-    available_until: str = Form("")
+    max_attempts: str = Form(""),
+    available_until: str = Form(""),
+    allowed_students: str = Form(""),
+    allowed_groups: str = Form("")
 ):
     user_login = get_user_from_session(request)
     if not user_login:
@@ -548,20 +700,20 @@ async def save_edit(
         data.append([question, answers_str])
     
     # Сохраняем в Excel файл в правильной директории
-    FILES_DIR = Path("uploaded_files")
-    file_path = FILES_DIR / filename
+    safe_filename = normalize_excel_filename(filename)
+    file_path = get_saved_file_path(safe_filename)
 
     try:
         # Используем нашу утилиту для сохранения без заголовков
         save_excel_file(str(file_path), data)
-        upsert_test_settings(filename, time_limit_minutes, available_until)
+        upsert_test_settings(safe_filename, time_limit_minutes, max_attempts, available_until, allowed_students, allowed_groups)
 
         # Возвращаем JSON ответ для асинхронного запроса
         return JSONResponse(
             content={
                 "success": True,
                 "message": f"Файл {filename} успешно сохранен",
-                "filename": filename
+                "filename": safe_filename
             }
         )
     except Exception as e:
@@ -570,3 +722,6 @@ async def save_edit(
             content={"error": f"Ошибка сохранения: {str(e)}\n{traceback.format_exc()}"},
             status_code=500
         )
+
+
+

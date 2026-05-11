@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Детали результата{% endblock %}
+{% block container_class %}test-result-detail-page{% endblock %}
+{% block content %}
+<style>
+    .container.test-result-detail-page {
+        max-width: 980px;
+        margin: 1.5rem auto;
+    }
+
+    .detail-summary {
+        border: 1px solid #dce3ea;
+        border-radius: 12px;
+        padding: 1rem 1.15rem;
+        background: linear-gradient(135deg, #f7fafc, #edf3f8);
+        margin-bottom: 1rem;
+    }
+
+    .detail-summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .detail-summary h2 {
+        text-align: left;
+        margin: 0 0 0.35rem 0;
+    }
+
+    .detail-summary-header > div:first-child {
+        flex: 1 1 320px;
+        min-width: 0;
+    }
+
+    .detail-toolbar {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .detail-toolbar .btn {
+        min-width: 150px;
+    }
+
+    .meta-grid {
+        margin-top: 0.8rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.7rem;
+    }
+
+    .meta-card {
+        border: 1px solid #dce3ea;
+        border-radius: 10px;
+        background: #fff;
+        padding: 0.65rem 0.75rem;
+    }
+
+    .meta-label {
+        color: #5b6670;
+        font-size: 0.82rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .meta-value {
+        color: #1f2d3a;
+        font-size: 0.98rem;
+        font-weight: 600;
+    }
+
+    .answers-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .answer-item {
+        border: 1px solid #dce3ea;
+        border-left: 5px solid #3d7eb6;
+        border-radius: 10px;
+        background: #fff;
+        padding: 0.85rem 1rem;
+        break-inside: avoid;
+    }
+
+    .answer-item h3 {
+        margin: 0 0 0.45rem;
+        font-size: 0.98rem;
+        color: #2c3e50;
+    }
+
+    .answer-label {
+        color: #556371;
+        font-size: 0.84rem;
+        margin-bottom: 0.22rem;
+    }
+
+    .answer-value {
+        color: #1f2d3a;
+        white-space: pre-wrap;
+        line-height: 1.35;
+    }
+
+    .answer-value.empty {
+        color: #8d99a6;
+        font-style: italic;
+    }
+
+    .detail-actions {
+        margin-top: 1.15rem;
+        display: flex;
+        justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+        .container.test-result-detail-page {
+            margin: 1rem auto;
+        }
+    }
+
+    @media print {
+        .navbar,
+        .detail-toolbar,
+        .detail-actions {
+            display: none !important;
+        }
+
+        .container.test-result-detail-page {
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: #fff !important;
+        }
+
+        .detail-summary,
+        .answer-item {
+            box-shadow: none !important;
+        }
+    }
+</style>
+
+<div class="detail-summary">
+    <div class="detail-summary-header">
+        <div>
+            <h2>Детали результата</h2>
+            <p>
+                Тест: <strong>{{ result_item.test_name }}</strong>, попытка <strong>{{ result_item.attempt_number }}</strong>.
+                Результат: <strong>{{ result_item.total_correct }} / {{ result_item.total_questions }}</strong> ({{ result_item.percentage_display }}%).
+            </p>
+        </div>
+
+        <div class="detail-toolbar">
+            <button type="button" class="btn btn-secondary" onclick="window.print()">Печать</button>
+            <a href="/results/{{ result_item.id }}/export" class="btn btn-primary">Выгрузить Excel</a>
+        </div>
+    </div>
+
+    <div class="meta-grid">
+        {% if show_user_meta %}
+        <div class="meta-card">
+            <div class="meta-label">Пользователь</div>
+            <div class="meta-value">{{ result_item.full_name }}</div>
+            <div class="meta-label" style="margin-top: 0.25rem;">{{ result_item.login }}{% if result_item.group_name %} • {{ result_item.group_name }}{% endif %}</div>
+        </div>
+        {% endif %}
+        <div class="meta-card">
+            <div class="meta-label">Начало</div>
+            <div class="meta-value">{{ result_item.started_at_display }}</div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">Завершение</div>
+            <div class="meta-value">{{ result_item.finished_at_display }}</div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">Время прохождения</div>
+            <div class="meta-value">{{ result_item.elapsed_time_display }}</div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">Статус</div>
+            <div class="meta-value">
+                {% if result_item.forced_finish %}
+                Принудительное завершение
+                {% else %}
+                Обычное завершение
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="answers-list">
+    {% for answer in result_item.answer_items %}
+    <article class="answer-item">
+        <h3>Вопрос {{ answer.index }}: {{ answer.question }}</h3>
+        <div class="answer-label">Ответ пользователя</div>
+        {% if answer.has_answer %}
+        <div class="answer-value">{{ answer.user_answer }}</div>
+        {% else %}
+        <div class="answer-value empty">Нет ответа</div>
+        {% endif %}
+    </article>
+    {% endfor %}
+</div>
+
+<div class="detail-actions">
+    <a href="/results" class="btn btn-primary">Назад к результатам</a>
+</div>
+{% endblock %}
