@@ -109,7 +109,7 @@ def get_template_context(request: Request):
     }
 
 # Настройка шаблонов и статических файлов
-templates = Jinja2Templates(directory="templatesrg")
+templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def generate_login(last_name: str, first_name: str, middle_name: str = None) -> str:
@@ -222,7 +222,7 @@ def save_user_to_db(user_data: dict) -> dict:
 async def home(request: Request):
     context = get_template_context(request)
     context["request"] = request
-    return templates.TemplateResponse("index.html", context)
+    return templates.TemplateResponse("v2_index.html", context)
 
 @app.get("/register")
 async def show_registration_form(request: Request):
@@ -271,7 +271,7 @@ async def register_user(
 async def show_upload_form(request: Request):
     context = get_template_context(request)
     context["request"] = request
-    return templates.TemplateResponse("upload.html", context)
+    return templates.TemplateResponse("v2_upload.html", context)
 
 @app.post("/upload")
 async def upload_users_file(request: Request, file: UploadFile = File(...)):

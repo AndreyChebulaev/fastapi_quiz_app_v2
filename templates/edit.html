@@ -232,7 +232,7 @@
         </div>
 
         <div class="editor-toolbar-actions">
-            <form action="/main2/upload" method="post" enctype="multipart/form-data" class="editor-upload-form">
+            <form action="/editor/upload" method="post" enctype="multipart/form-data" class="editor-upload-form">
                 <div class="editor-upload-meta">
                     <span class="editor-upload-title">Импорт Excel</span>
                     <span class="editor-upload-filename" id="editor-upload-filename">.xlsx или .xls</span>
@@ -255,7 +255,7 @@
     </div>
 </div>
 
-<form action="/main2/save" method="post" id="main-form" class="{% if filename == 'new_file.xlsx' %}create-test-form{% endif %}">
+<form action="/editor/save" method="post" id="main-form" class="{% if filename == 'new_file.xlsx' %}create-test-form{% endif %}">
     <input type="hidden" name="filename" value="{{ filename }}">
     <input type="hidden" name="original_data" value="{{ original_data }}">
 
@@ -548,7 +548,7 @@ function filterAccessList(searchId, listId) {
 }
 
 function downloadCurrentFile(filename) {
-    window.location.href = `/main2/download/${encodeURIComponent(filename)}`;
+    window.location.href = `/editor/download/${encodeURIComponent(filename)}`;
 }
 
 const editorUploadInput = document.getElementById('editor-upload-input');
@@ -627,7 +627,7 @@ document.getElementById('main-form').addEventListener('submit', function(e) {
         formData.append('answers', JSON.stringify(answersArray));
     });
 
-    fetch('/main2/save_edit', {
+    fetch('/editor/save_edit', {
         method: 'POST',
         body: formData
     })

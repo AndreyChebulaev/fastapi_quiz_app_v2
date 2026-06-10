@@ -22,23 +22,20 @@ from datetime import datetime, timedelta
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-import main2
-import app
+import editor
+import users
 from session_manager import create_session, active_sessions
-from app import app as app_v2
+from users import app as app_v2
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 app.mount("/v2", app_v2)
-app.mount("/main2", main2.app)
+app.mount("/editor", editor.app)
 
 # Глобальные данные
 MODEL_NAME = 'all-MiniLM-L6-v2'
 THRESHOLD = 0.833
-
-# region agent log helper
-DEBUG_LOG_PATH = r"c:\Users\Andrey\Desktop\fastapi_quiz_app_v2\.cursor\debug.log"
 
 
 def debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: Optional[Dict[str, Any]] = None) -> None:
@@ -508,6 +505,104 @@ def tokenize_search_text(value: str) -> List[str]:
     return [token for token in re.split(r"[^\w-]+", normalized, flags=re.UNICODE) if token]
 
 
+RESULT_SEARCH_STOPWORDS = {
+    "покажи", "показать", "найди", "найти", "выведи", "вывести", "все", "всех",
+    "результат", "результаты", "результатов", "результате", "тест", "теста", "тестов",
+    "где", "у", "для", "по", "с", "со", "и", "или", "а", "но", "на", "в", "во",
+    "к", "ко", "из", "от", "до", "это", "этого", "этот", "эта", "эти", "мне",
+    "нужны", "нужен", "нужна", "нужно", "есть", "покажите", "выведите"
+}
+
+
+RUSSIAN_NUMBER_WORDS = {
+    "ноль": 0,
+    "один": 1, "одна": 1, "одного": 1, "одной": 1,
+    "два": 2, "две": 2, "двух": 2,
+    "три": 3, "трех": 3, "трёх": 3,
+    "четыре": 4, "четырех": 4, "четырёх": 4,
+    "пять": 5, "пяти": 5,
+    "шесть": 6, "шести": 6,
+    "семь": 7, "семи": 7,
+    "восемь": 8, "восьми": 8,
+    "девять": 9, "девяти": 9,
+    "десять": 10, "десяти": 10
+}
+
+
+def parse_russian_number(value: str) -> Optional[float]:
+    normalized = normalize_search_text(value)
+    if not normalized:
+        return None
+    if re.fullmatch(r"\d+(?:[.,]\d+)?", normalized):
+        return float(normalized.replace(",", "."))
+    return float(RUSSIAN_NUMBER_WORDS[normalized]) if normalized in RUSSIAN_NUMBER_WORDS else None
+
+
+def detect_comparison_operator(raw_operator: str) -> str:
+    operator = normalize_search_text(raw_operator)
+    if operator in {"больше", "более", "свыше", "выше", "после", ">"}:
+        return "gt"
+    if operator in {"не меньше", "не менее", "от", ">="}:
+        return "gte"
+    if operator in {"меньше", "менее", "ниже", "до", "<"}:
+        return "lt"
+    if operator in {"не больше", "не более", "<="}:
+        return "lte"
+    if operator in {"равно", "=", "ровно"}:
+        return "eq"
+    return "eq"
+
+
+def compare_numeric_value(value: float, operator: str, threshold: float) -> bool:
+    if operator == "gt":
+        return value > threshold
+    if operator == "gte":
+        return value >= threshold
+    if operator == "lt":
+        return value < threshold
+    if operator == "lte":
+        return value <= threshold
+    return value == threshold
+
+
+def parse_result_search_query(search_query: str) -> Dict[str, Any]:
+    normalized_query = normalize_search_text(search_query)
+    cleaned_query = normalized_query
+    filters: Dict[str, Dict[str, float]] = {}
+
+    structured_patterns = [
+        ("attempt_number", r"попыт\w*\s+(не\s+меньше|не\s+менее|не\s+больше|не\s+более|больше|более|свыше|выше|меньше|менее|ниже|до|от|равно|ровно|>=|<=|>|<|=)\s+([a-zа-яё0-9.,-]+)"),
+        ("attempt_number", r"(не\s+меньше|не\s+менее|не\s+больше|не\s+более|больше|более|свыше|выше|меньше|менее|ниже|до|от|равно|ровно|>=|<=|>|<|=)\s+([a-zа-яё0-9.,-]+)\s+попыт\w*"),
+        ("percentage_value", r"процент(?:\s+\w+){0,2}\s+(не\s+меньше|не\s+менее|не\s+больше|не\s+более|больше|более|свыше|выше|меньше|менее|ниже|до|от|равно|ровно|>=|<=|>|<|=)\s+([a-zа-яё0-9.,-]+)"),
+        ("percentage_value", r"(не\s+меньше|не\s+менее|не\s+больше|не\s+более|больше|более|свыше|выше|меньше|менее|ниже|до|от|равно|ровно|>=|<=|>|<|=)\s+([a-zа-яё0-9.,-]+)\s+процент(?:\s+\w+){0,2}")
+    ]
+
+    for field_name, pattern in structured_patterns:
+        match = re.search(pattern, cleaned_query, flags=re.IGNORECASE)
+        if not match:
+            continue
+        operator = detect_comparison_operator(match.group(1))
+        threshold = parse_russian_number(match.group(2))
+        if threshold is None:
+            continue
+        filters[field_name] = {
+            "operator": operator,
+            "value": threshold
+        }
+        cleaned_query = re.sub(pattern, " ", cleaned_query, count=1, flags=re.IGNORECASE)
+
+    semantic_tokens = [
+        token for token in tokenize_search_text(cleaned_query)
+        if token not in RESULT_SEARCH_STOPWORDS and not re.fullmatch(r"\d+(?:[.,]\d+)?", token)
+    ]
+
+    return {
+        "original_query": normalized_query,
+        "semantic_query": " ".join(semantic_tokens).strip(),
+        "filters": filters
+    }
+
+
 def build_result_search_document(item: Dict[str, Any]) -> str:
     parts = [
         item.get("full_name", ""),
@@ -516,6 +611,8 @@ def build_result_search_document(item: Dict[str, Any]) -> str:
         item.get("test_name", ""),
         item.get("filename", ""),
         str(item.get("attempt_number", "")),
+        str(item.get("percentage_value", "")),
+        f"{item.get('total_correct', '')} {item.get('total_questions', '')}",
         item.get("finished_at_display", "")
     ]
     return normalize_search_text(" ".join(part for part in parts if part))
@@ -556,16 +653,39 @@ def compute_result_lexical_score(search_query: str, search_doc: str) -> float:
 
 
 def apply_ai_result_search(results: List[Dict[str, Any]], search_query: str) -> List[Dict[str, Any]]:
-    normalized_query = normalize_search_text(search_query)
+    parsed_query = parse_result_search_query(search_query)
+    normalized_query = parsed_query["original_query"]
+    semantic_query = parsed_query["semantic_query"]
+    structured_filters = parsed_query["filters"]
+
     if not normalized_query:
         return results
+
+    filtered_input_results = []
+    for item in results:
+        passes_filters = True
+        for field_name, condition in structured_filters.items():
+            raw_value = item.get(field_name)
+            try:
+                numeric_value = float(raw_value)
+            except (TypeError, ValueError):
+                passes_filters = False
+                break
+            if not compare_numeric_value(numeric_value, str(condition["operator"]), float(condition["value"])):
+                passes_filters = False
+                break
+        if passes_filters:
+            filtered_input_results.append(item)
+
+    if not semantic_query:
+        return filtered_input_results
 
     enriched_results: List[Dict[str, Any]] = []
     documents: List[str] = []
 
-    for item in results:
+    for item in filtered_input_results:
         search_doc = build_result_search_document(item)
-        lexical_score = compute_result_lexical_score(normalized_query, search_doc)
+        lexical_score = compute_result_lexical_score(semantic_query, search_doc)
 
         enriched_item = dict(item)
         enriched_item["_search_doc"] = search_doc
@@ -577,7 +697,7 @@ def apply_ai_result_search(results: List[Dict[str, Any]], search_query: str) -> 
 
     if model is not None and documents:
         try:
-            query_embedding = model.encode(normalized_query, convert_to_tensor=True)
+            query_embedding = model.encode(semantic_query, convert_to_tensor=True)
             doc_embeddings = model.encode(documents, convert_to_tensor=True)
             semantic_scores = util.cos_sim(query_embedding, doc_embeddings)[0]
 
@@ -592,8 +712,8 @@ def apply_ai_result_search(results: List[Dict[str, Any]], search_query: str) -> 
     for item in enriched_results:
         lexical_score = float(item.get("_lexical_score", 0.0) or 0.0)
         semantic_score = float(item.get("_semantic_score", 0.0) or 0.0)
-        exact_hit = normalized_query in item.get("_search_doc", "")
-        token_hit = lexical_score >= 0.9
+        exact_hit = semantic_query in item.get("_search_doc", "")
+        token_hit = lexical_score >= 0.55
         semantic_hit = semantic_score >= 0.42 and lexical_score >= 0.2
         strong_semantic_hit = semantic_score >= 0.67
 
@@ -999,6 +1119,7 @@ def get_test_results_for_view(
             "attempt_number": int(attempt_number or 0),
             "total_correct": int(total_correct or 0),
             "total_questions": int(total_questions or 0),
+            "percentage_value": percentage_value,
             "percentage_display": f"{percentage_value:.1f}",
             "elapsed_time_display": format_duration(elapsed_seconds),
             "forced_finish": bool(forced_finish),
@@ -1249,6 +1370,9 @@ def get_uploaded_files(user_info: Optional[Dict[str, Any]] = None):
         filename = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
         settings = get_test_settings(filename)
+        has_access, _ = can_user_access_test(settings, user_info)
+        if not has_access:
+            continue
         attempt_limit = get_attempt_limit_status(settings, login, filename)
         available_until_dt = parse_available_until(settings.get("available_until"))
         is_available = True
@@ -1259,11 +1383,7 @@ def get_uploaded_files(user_info: Optional[Dict[str, Any]] = None):
             is_limit_expired = True
             unavailable_reason = "Дедлайн уже прошел"
         else:
-            has_access, access_reason = can_user_access_test(settings, user_info)
-            if not has_access:
-                is_available = False
-                unavailable_reason = access_reason
-            elif attempt_limit["limit_reached"]:
+            if attempt_limit["limit_reached"]:
                 is_available = False
                 is_limit_expired = True
                 unavailable_reason = f"Лимит попыток исчерпан ({attempt_limit['attempts_used']} из {attempt_limit['max_attempts']})."
@@ -2126,19 +2246,7 @@ def redirect_to_editor(request: Request):
     if not user_permissions['can_edit_tests']:
         return RedirectResponse(url="/select", status_code=303)
     
-    return RedirectResponse(url="/main2", status_code=307)
+    return RedirectResponse(url="/editor", status_code=307)
 # Для запуска:
 # uvicorn main:app --reload
-
-
-
-
-
-
-
-
-
-
-
-
 

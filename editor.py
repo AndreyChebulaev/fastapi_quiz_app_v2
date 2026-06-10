@@ -322,7 +322,7 @@ async def home(request: Request):
         return RedirectResponse(url="/select", status_code=303)
     
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/main2/create-new", status_code=303)
+    return RedirectResponse(url="/editor/create-new", status_code=303)
     
     return templates.TemplateResponse("upload.html", {
         "request": request,
