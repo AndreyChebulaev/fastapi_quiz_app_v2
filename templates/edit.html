@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title %}{% if filename == 'new_file.xlsx' %}Создание теста{% else %}Редактирование теста{% endif %}{% endblock %}
 {% block container_class %}new-test-edit-page{% endblock %}
 
 {% block content %}

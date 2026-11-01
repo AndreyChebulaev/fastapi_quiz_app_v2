@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title %}Редактирование пользователя{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -33,55 +34,55 @@
 </style>
 {% endblock %}
 
+{% block container_class %}edit-user-container{% endblock %}
+
 {% block content %}
-<div class="container edit-user-container">
-    <h2>Редактирование пользователя</h2>
-    
-    <form method="post" action="/v2/users/{{ user.id }}/update" class="edit-form">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="last_name">Фамилия:</label>
-                <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" required class="form-input">
-            </div>
-            
-            <div class="form-group">
-                <label for="first_name">Имя:</label>
-                <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required class="form-input">
-            </div>
-            
-            <div class="form-group">
-                <label for="middle_name">Отчество:</label>
-                <input type="text" id="middle_name" name="middle_name" value="{{ user.middle_name or '' }}" class="form-input">
-            </div>
-        </div>
+<h2>Редактирование пользователя</h2>
 
-        {% if user.user_type == 'student' %}
+<form method="post" action="/v2/users/{{ user.id }}/update" class="edit-form">
+    <div class="form-row">
         <div class="form-group">
-            <label for="group_name">Группа:</label>
-            <input type="text" id="group_name" name="group_name" value="{{ user.group_name or '' }}" class="form-input">
-        </div>
-        {% endif %}
-
-        <div class="form-group">
-            <label for="login">Логин:</label>
-            <input type="text" id="login" name="login" value="{{ user.login }}" required class="form-input">
+            <label for="last_name">Фамилия:</label>
+            <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" required class="form-input">
         </div>
 
         <div class="form-group">
-            <label for="password">Пароль:</label>
-            <div class="password-field">
-                <input type="password" id="password" name="password" value="{{ user.password }}" required class="form-input">
-                <button type="button" class="btn-password-toggle" onclick="togglePassword()">👁️</button>
-                <button type="button" class="btn btn-primary" onclick="regeneratePassword({{ user.id }})">Сгенерировать новый</button>
-            </div>
+            <label for="first_name">Имя:</label>
+            <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required class="form-input">
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-save">Сохранить изменения</button>
-            <a href="/v2/users" class="btn btn-cancel">Отмена</a>
+        <div class="form-group">
+            <label for="middle_name">Отчество:</label>
+            <input type="text" id="middle_name" name="middle_name" value="{{ user.middle_name or '' }}" class="form-input">
         </div>
-    </form>
-</div>
+    </div>
+
+    {% if user.user_type == 'student' %}
+    <div class="form-group">
+        <label for="group_name">Группа:</label>
+        <input type="text" id="group_name" name="group_name" value="{{ user.group_name or '' }}" class="form-input">
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+        <label for="login">Логин:</label>
+        <input type="text" id="login" name="login" value="{{ user.login }}" required class="form-input">
+    </div>
+
+    <div class="form-group">
+        <label for="password">Пароль:</label>
+        <div class="password-field">
+            <input type="password" id="password" name="password" value="{{ user.password }}" required class="form-input">
+            <button type="button" class="btn-password-toggle" onclick="togglePassword()">👁️</button>
+            <button type="button" class="btn btn-primary" onclick="regeneratePassword({{ user.id }})">Сгенерировать новый</button>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-save">Сохранить изменения</button>
+        <a href="/v2/users" class="btn btn-cancel">Отмена</a>
+    </div>
+</form>
 
 <script>
 function togglePassword() {

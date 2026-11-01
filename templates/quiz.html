@@ -16,11 +16,12 @@
         <h2>{{ question }}</h2>
     </div>
 
-    <form id="answerForm">
+    <form id="answerForm" autocomplete="off">
         <input type="hidden" name="idx" value="{{ idx }}">
         <input type="text" id="user_answer" name="user_answer"
                value="{{ current_answer }}"
                required autofocus
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                placeholder="Введите свой ответ здесь...">
     </form>
 
